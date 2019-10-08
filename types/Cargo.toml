@@ -1,0 +1,17 @@
+[package]
+name = 'types'
+version = '0.1.0'
+authors = ['Saulius Grigaitis <saulius@dist.lt>']
+edition = '2018'
+
+[dependencies]
+bls = { path = '../utils/bls' }
+ethereum-types = '0.6'
+serde = { version = '1.0', features = ['derive']}
+generic-array = { version = '0.13.2', features = ['serde'] }
+typenum = '1.11.2'
+eth2_ssz = '0.1'
+eth2_ssz_derive = '0.1'
+eth2_ssz_types = { path = '../utils/ssz_types' }
+tree_hash = '0.1'
+tree_hash_derive = '0.2'

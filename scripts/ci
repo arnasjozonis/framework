@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+set -o errexit
+
+export PATH="${CARGO_HOME:-$HOME/.cargo}/bin:$PATH"
+
+# sudo apt-get update
+# sudo apt-get install \
+# cmake \
+# libssl-dev \
+# pkg-config \
+# silversearcher-ag \
+# zlib1g-dev
+
+curl \
+--fail \
+--proto =https \
+--show-error \
+--silent \
+--tlsv1.2 \
+https://sh.rustup.rs > rustup-init.sh
+
+# rustup-init.sh specifies Bash as the interpreter in its shebang line.
+# See https://github.com/rust-lang/rustup.rs/blob/2ece700231f8a1778647981df94052e5b27cbedf/rustup-init.sh.
+bash rustup-init.sh --no-modify-path -y
+
+rustup component add clippy rustfmt
+
+# Cargo has no built-in way to update installed binary crates.
+# A command for it was recently implemented but hasn't been released yet.
+# See https://github.com/rust-lang/cargo/issues/6797.
+if ! command -v cargo-install-update
+then
+cargo install cargo-update
+fi
+cargo install-update --allow-no-update cargo-tarpaulin cargo-update
+
+cargo update --locked
+cargo fmt --all -- --check
+cargo clippy --profile test -- --deny warnings
+
+tarpaulin() {
+cargo tarpaulin \
+--ignore-tests \
+--out Xml \
+--verbose
+}
+
+# Tarpaulin exits successfully (with zero status) if any of the tests segfault.
+# We work around that by searching Tarpaulin's output for error messages and
+# making the build fail if we find any.
+! tarpaulin |& ag --passthrough ERROR

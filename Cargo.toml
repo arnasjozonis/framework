@@ -1,0 +1,22 @@
+[workspace]
+members = [
+    'types',
+    'utils/bls',
+    'utils/eth2_hashing',
+    'utils/serde_hex',
+    'utils/ssz',
+    'utils/ssz_types',
+    'utils/tree_hash',
+    'utils/tree_hash_derive',
+]
+
+[profile.release]
+overflow-checks = true
+
+[patch]
+[patch.crates-io]
+tree_hash = { path = "utils/tree_hash" }
+tree_hash_derive = { path = "utils/tree_hash_derive" }
+eth2_ssz = { path = "utils/ssz" }
+eth2_ssz_derive = { path = "utils/ssz_derive" }
+eth2_ssz_types = { path = "utils/ssz_types" }
