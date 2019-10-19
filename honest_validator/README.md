@@ -1,11 +1,11 @@
 # Honest validator client (HVC) by [ Arnas, Aurintas, Rasa ]
 
-[comment]: # TODO: add short description
+[comment]: # (TODO: add short description)
 _Should be short description of the project._
 
 ## Roles
 
-[comment]: # TODO: As this is copied from lighthouse docs, use this as guide at first, but ultimately needs to be replaced by our original content
+[comment]: # (TODO: As this is copied from lighthouse docs, use this as guide at first, but ultimately needs to be replaced by our original content)
 
 The HVC is responsible for the following tasks:
 
@@ -23,35 +23,35 @@ The HVC is capable of managing multiple validators in the same process tree.
 
 ## Implementation
 
-[comment]: # TODO: add short description of implementation
+[comment]: # (TODO: add short description of implementation)
 _This section describes the present implementation of this HVC binary._
 
 ### Services
 
-[comment]: # TODO: add short description of services
+[comment]: # (TODO: add short description of services)
 _Description._
 
 #### `DutiesManagerService`
 
-[comment]: # TODO: short documentation of service
+[comment]: # (TODO: add short description of services)
 _Documentation_
 
 #### `BlockProducerService`
 
-[comment]: # TODO: short documentation of service
+[comment]: # (TODO: add short description of services)
 _Documentation_
 
 #### `AttestationProducerService`
 
-[comment]: # TODO: short documentation of service
+[comment]: # (TODO: add short description of services)
 _Documentation_
 
 ### Configuration
 
-[comment]: # TODO: short documentation of configuration for HVC
+[comment]: # (TODO: short documentation of configuration for HVC)
 _Documentation_
 
 ## BN Communication
 
-[comment]: # TODO: short documentation of communication with BN
+[comment]: # (TODO: short documentation of communication with BN)
 _Documentation_
