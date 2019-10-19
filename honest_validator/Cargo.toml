@@ -1,0 +1,11 @@
+[package]
+name = "framework_honest_validator"
+version = "0.1.0"
+authors = ["Arnas Jozonis, Aurintas Bubinas, Rasa Smigelskytė"]
+edition = "2019"
+
+[[bin]]
+name = "validator_client"
+path = "src/main.rs"
+
+[dependencies]
