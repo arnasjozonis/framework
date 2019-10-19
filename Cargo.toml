@@ -8,6 +8,7 @@ members = [
     'utils/ssz_types',
     'utils/tree_hash',
     'utils/tree_hash_derive',
+    'honest_validator'
 ]
 
 [profile.release]
