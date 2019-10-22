@@ -1,7 +1,7 @@
 [package]
 name = "framework_honest_validator"
 version = "0.1.0"
-authors = ["Arnas Jozonis, Aurintas Bubinas, Rasa Smigelskytė"]
+authors = ["Arnas Jozonis, Aurintas Bubinas, Rasa Šmigelskytė"]
 edition = "2018"
 
 [[bin]]
