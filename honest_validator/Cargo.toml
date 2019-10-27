@@ -9,3 +9,9 @@ name = "validator_client"
 path = "src/main.rs"
 
 [dependencies]
+bls = { path = "../utils/bls" }
+types = { path = "../types" }
+eth2_hashing = { path = "../utils/eth2_hashing"}
+eth2_ssz = { path = "../utils/ssz"}
+eth2_ssz_types = { path = "../utils/ssz_types"}
+tree_hash = { path = "../utils/tree_hash"}
