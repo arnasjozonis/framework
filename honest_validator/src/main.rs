@@ -20,7 +20,8 @@ fn main() {
         .arg(
             Arg::with_name("spec")
                 .short("s")
-                .value_name("TITLE")
+                .long("spec")
+                .value_name("CONFIGURATION")
                 .help("Specifies the default eth2 spec type.")
                 .takes_value(true)
                 .possible_values(&["mainnet", "minimal", "internal_test"])
