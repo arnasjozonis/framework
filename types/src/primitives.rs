@@ -6,5 +6,6 @@ pub type Gwei = u64;
 pub type Shard = u64;
 pub type Slot = u64;
 pub type ValidatorIndex = u64;
+pub type CommitteeIndex = u64;
 pub type ValidatorId = PublicKey;
 pub type Version = [u8; 4];

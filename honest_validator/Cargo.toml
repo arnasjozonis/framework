@@ -9,6 +9,7 @@ name = "validator_client"
 path = "src/main.rs"
 
 [dependencies]
+clap = "2.33.0"
 bls = { path = "../utils/bls" }
 types = { path = "../types" }
 eth2_hashing = { path = "../utils/eth2_hashing"}
