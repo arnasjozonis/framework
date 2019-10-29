@@ -1,8 +1,8 @@
-extern crate framework_honest_validator;
+extern crate framework_honest_validator as hv;
 
 use types::config::{ Config as EthConfigType, QuickConfig as EthConfigQuick };
-use framework_honest_validator::service::ValidatorService;
-use framework_honest_validator::duties_manager::DutiesManager;
+use hv::service::ValidatorService;
+use hv::duties_manager::DutiesManager;
 
 fn main() {
     println!("Honest validator says hello!");
