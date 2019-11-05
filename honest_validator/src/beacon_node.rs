@@ -7,7 +7,7 @@ pub trait BeaconNode<C: Config> {
     fn compute_start_slot_at_epoch(&self, epoch: Epoch) -> Slot;
     fn get_committee_count_at_slot(&self, state: BeaconState<C>, slot: Slot) -> u64;
     fn get_beacon_committee(&self, state: BeaconState<C>, slot: Slot, index: CommitteeIndex) -> Vec<ValidatorIndex>;
-    fn get_beacon_proposer_index(&self, state: BeaconState) -> ValidatorIndex:
+    fn get_beacon_proposer_index(&self, state: BeaconState<C>) -> ValidatorIndex;
 }
 
 pub struct BasicBeaconNode<C: Config>{
@@ -27,4 +27,5 @@ impl<C: Config> BeaconNode<C> for BasicBeaconNode<C> {
         let res: Vec<ValidatorIndex> = Vec::new();
         res
     }
+    fn get_beacon_proposer_index(&self, state: BeaconState<C>) -> ValidatorIndex { let res: ValidatorIndex = 0; res}
 }
