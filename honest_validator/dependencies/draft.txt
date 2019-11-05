@@ -4,7 +4,7 @@ Helper functions:
     fn get_committee_count_at_slot(state: BeaconState<C>, slot: Slot) -> u64;
     fn get_beacon_committee(state: BeaconState<C>, slot: Slot, index: CommitteeIndex) -> Vec<ValidatorIndex>;
     fn get_beacon_proposer_index(state: BeaconState<C>) -> ValidatorIndex;
-
+    fn get_block_root(state: BeaconState, slot: Slot) -> Hash;
 Beacon chain:
     - Protocol for communication. gRPC? Http? rest API? Pub-sub?
     - Register validators?
