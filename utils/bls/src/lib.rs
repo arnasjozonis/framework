@@ -1,3 +1,13 @@
+#![allow(unused_qualifications)]
+#![allow(unused_lifetimes)]
+#![allow(clippy::if_not_else)]
+#![allow(clippy::missing_const_for_fn)]
+#![allow(clippy::needless_borrow)]
+#![allow(clippy::needless_pass_by_value)]
+#![allow(clippy::redundant_clone)]
+#![allow(clippy::result_unwrap_used)]
+#![allow(clippy::use_self)]
+
 extern crate milagro_bls;
 extern crate ssz;
 
