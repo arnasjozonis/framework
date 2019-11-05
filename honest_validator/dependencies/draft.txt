@@ -1,0 +1,12 @@
+Helper functions:
+    fn get_current_epoch(&self, state: BeaconState<C>) -> Epoch;
+    fn compute_start_slot_at_epoch(&self, epoch: Epoch) -> Slot;
+    fn get_committee_count_at_slot(&self, state: BeaconState<C>, slot: Slot) -> u64;
+    fn get_beacon_committee(&self, state: BeaconState<C>, slot: Slot, index: CommitteeIndex) -> Vec<ValidatorIndex>;
+    fn get_beacon_proposer_index(&self, state: BeaconState<C>) -> ValidatorIndex;
+
+Beacon chain:
+    - Protocol for communication. gRPC? Http? rest API? Pub-sub?
+    - Register validators?
+    - /beacon/validators/indices: get validator index by pubkey.
+    - /beacon/state: get the full beacon state, at a particular slot or block root.
