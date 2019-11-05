@@ -1,9 +1,9 @@
 Helper functions:
-    fn get_current_epoch(&self, state: BeaconState<C>) -> Epoch;
-    fn compute_start_slot_at_epoch(&self, epoch: Epoch) -> Slot;
-    fn get_committee_count_at_slot(&self, state: BeaconState<C>, slot: Slot) -> u64;
-    fn get_beacon_committee(&self, state: BeaconState<C>, slot: Slot, index: CommitteeIndex) -> Vec<ValidatorIndex>;
-    fn get_beacon_proposer_index(&self, state: BeaconState<C>) -> ValidatorIndex;
+    fn get_current_epoch(state: BeaconState<C>) -> Epoch;
+    fn compute_start_slot_at_epoch(epoch: Epoch) -> Slot;
+    fn get_committee_count_at_slot(state: BeaconState<C>, slot: Slot) -> u64;
+    fn get_beacon_committee(state: BeaconState<C>, slot: Slot, index: CommitteeIndex) -> Vec<ValidatorIndex>;
+    fn get_beacon_proposer_index(state: BeaconState<C>) -> ValidatorIndex;
 
 Beacon chain:
     - Protocol for communication. gRPC? Http? rest API? Pub-sub?
