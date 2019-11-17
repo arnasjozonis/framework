@@ -23,10 +23,11 @@ pub struct Attestation<C: Config> {
     Clone, PartialEq, Eq, Debug, Hash, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot,
 )]
 pub struct AttestationData {
+    pub slot: Slot,
+    pub index: CommitteeIndex,
     pub beacon_block_root: H256,
     pub source: Checkpoint,
     pub target: Checkpoint,
-    pub crosslink: Crosslink,
 }
 
 #[derive(

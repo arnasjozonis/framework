@@ -12,6 +12,7 @@ path = "src/main.rs"
 clap = "2.33.0"
 bls = { path = "../utils/bls" }
 types = { path = "../types" }
+typenum = '1.11.2'
 eth2_hashing = { path = "../utils/eth2_hashing"}
 eth2_ssz = { path = "../utils/ssz"}
 eth2_ssz_types = { path = "../utils/ssz_types"}
