@@ -57,6 +57,9 @@ impl<C: Config> BeaconNode<C> for BasicBeaconNode<C> {
         index: CommitteeIndex,
     ) -> Vec<ValidatorIndex> {
         let res: Vec<ValidatorIndex> = Vec::new();
+        res.push(0);
+        res.push(1);
+        res.push(2);
         res
     }
     fn get_beacon_proposer_index(&self, state: &BeaconState<C>) -> ValidatorIndex {
@@ -74,4 +77,5 @@ impl<C: Config> BeaconNode<C> for BasicBeaconNode<C> {
     ) -> Domain {
         0
     }
+
 }
