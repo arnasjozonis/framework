@@ -40,6 +40,7 @@ fn main() {
     let cfg = EthConfigQuick;
     let dm = DutiesManager { 
         config: cfg,
-        beacon_node:  BasicBeaconNode::new(cfg)};
+        beacon_node:  BasicBeaconNode::new(cfg)
+    };
     ValidatorService::start(dm, cfg);
 }
