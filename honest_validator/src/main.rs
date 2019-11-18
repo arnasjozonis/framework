@@ -1,6 +1,6 @@
 extern crate framework_honest_validator as hv;
 
-use types::config::{ Config as EthConfigType, QuickConfig as EthConfigQuick };
+use types::config::{ QuickConfig as EthConfigQuick };
 use hv::service::ValidatorService;
 use hv::duties_manager::DutiesManager;
 use hv::beacon_node::{BeaconNode, BasicBeaconNode};
@@ -32,15 +32,14 @@ fn main() {
         _ => AppConfiguration::Unsupported,
     };
 
-    match app_cfg {
-        AppConfiguration::InternalTest => println!{"Let's do some work"},
-        AppConfiguration::Unsupported => panic!("Only internal test configuration is supported")
-    }
-
-    let cfg = EthConfigQuick;
-    let dm = DutiesManager { 
-        config: cfg,
-        beacon_node:  BasicBeaconNode::new(cfg)
+    let cfg = match app_cfg {
+        AppConfiguration::InternalTest =>  EthConfigQuick,
+        AppConfiguration::Unsupported =>  EthConfigQuick
     };
-    ValidatorService::start(dm, cfg);
+    let beacon_node = BasicBeaconNode {
+        Cfg: cfg
+    };
+    let dm = DutiesManager::new(beacon_node);
+    let service: ValidatorService<EthConfigQuick> = ValidatorService::new(dm, cfg);
+    service.start();
 }

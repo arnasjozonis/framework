@@ -1,5 +1,5 @@
 use types::beacon_state::BeaconState;
-use types::config::Config;
+use types::config::{ Config, QuickConfig };
 use types::primitives::{CommitteeIndex, Domain, DomainType, Epoch, Slot, ValidatorIndex, H256};
 
 #[derive(PartialEq, Debug)]
@@ -8,7 +8,8 @@ pub enum Error {
     IndexOutOfRange,
 }
 
-pub trait BeaconNode<C: Config> {
+pub trait BeaconNode<C: Config>{
+
     fn get_current_epoch(&self, state: &BeaconState<C>) -> Epoch;
     fn compute_start_slot_at_epoch(&self, epoch: Epoch) -> Slot;
     fn get_committee_count_at_slot(&self, state: &BeaconState<C>, slot: Slot) -> u64;
@@ -29,12 +30,7 @@ pub trait BeaconNode<C: Config> {
 }
 
 pub struct BasicBeaconNode<C: Config> {
-    cfg: C,
-}
-impl<C: Config> BasicBeaconNode<C> {
-    pub fn new(cfg: C) -> BasicBeaconNode<C> {
-        BasicBeaconNode { cfg }
-    }
+    pub Cfg: C
 }
 
 impl<C: Config> BeaconNode<C> for BasicBeaconNode<C> {
@@ -56,7 +52,7 @@ impl<C: Config> BeaconNode<C> for BasicBeaconNode<C> {
         slot: Slot,
         index: CommitteeIndex,
     ) -> Vec<ValidatorIndex> {
-        let res: Vec<ValidatorIndex> = Vec::new();
+        let mut res: Vec<ValidatorIndex> = Vec::new();
         res.push(0);
         res.push(1);
         res.push(2);

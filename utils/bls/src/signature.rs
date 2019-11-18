@@ -133,6 +133,12 @@ impl<'de> Deserialize<'de> for Signature {
     }
 }
 
+impl Default for Signature {
+    fn default() -> Self {
+        Signature::empty_signature()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::super::Keypair;
