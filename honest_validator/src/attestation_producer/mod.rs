@@ -6,7 +6,7 @@ use types::beacon_state::BeaconState;
 use types::config::*;
 use types::primitives::{Epoch, H256};
 use types::types::{
-    Attestation, AttestationData, AttestationDataAndCustodyBit, AttestationDuty, Checkpoint,
+    Attestation, AttestationData, AttestationDuty, Checkpoint,
 };
 
 pub struct AttestationProducer<C: Config, BN: BeaconNode<C>> {
