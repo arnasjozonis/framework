@@ -5,6 +5,7 @@ members = [
     'utils/eth2_hashing',
     'utils/serde_hex',
     'utils/ssz',
+    'utils/ssz_derive',
     'utils/ssz_types',
     'utils/tree_hash',
     'utils/tree_hash_derive',

@@ -1,3 +1,5 @@
+#![allow(clippy::result_unwrap_used)]
+
 use hex;
 use hex::ToHex;
 use serde::de::{self, Visitor};
