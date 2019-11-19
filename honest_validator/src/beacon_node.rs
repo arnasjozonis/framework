@@ -1,5 +1,5 @@
 use types::beacon_state::BeaconState;
-use types::config::{ Config, QuickConfig };
+use types::config::{ Config };
 use types::primitives::{CommitteeIndex, Domain, DomainType, Epoch, Slot, ValidatorIndex, H256};
 
 #[derive(PartialEq, Debug)]
@@ -39,11 +39,11 @@ impl<C: Config> BeaconNode<C> for BasicBeaconNode<C> {
         res
     }
     fn compute_start_slot_at_epoch(&self, epoch: Epoch) -> Slot {
-        let res: Slot = 0;
+        let res: Slot = 4;
         res
     }
     fn get_committee_count_at_slot(&self, state: &BeaconState<C>, slot: Slot) -> u64 {
-        let res: u64 = 0;
+        let res: u64 = 4;
         res
     }
     fn get_beacon_committee(
@@ -56,10 +56,11 @@ impl<C: Config> BeaconNode<C> for BasicBeaconNode<C> {
         res.push(0);
         res.push(1);
         res.push(2);
+        res.push(3);
         res
     }
     fn get_beacon_proposer_index(&self, state: &BeaconState<C>) -> ValidatorIndex {
-        let res: ValidatorIndex = 0;
+        let res: ValidatorIndex = 3;
         res
     }
     fn get_block_root(&self, state: &BeaconState<C>, epoch: Epoch) -> Result<H256, Error> {
