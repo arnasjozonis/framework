@@ -4,7 +4,10 @@ use ssz_types::BitList;
 use tree_hash::TreeHash;
 use types::beacon_state::BeaconState;
 use types::config::*;
-use types::types::{Attestation, AttestationData, AttestationDuty, Checkpoint};
+use types::primitives::{Epoch, H256};
+use types::types::{
+    Attestation, AttestationData, AttestationDataAndCustodyBit, AttestationDuty, Checkpoint,
+};
 
 pub struct AttestationProducer<C: Config, BN: BeaconNode<C>> {
     pub config: C,
@@ -25,7 +28,6 @@ impl<C: Config, BN: BeaconNode<C>> AttestationProducer<C, BN> {
                 .get_block_root_at_slot(head_state, start_slot)
                 .unwrap()
         };
-
         let target = Checkpoint {
             epoch: epoch,
             root: epoch_boundary_block_root,

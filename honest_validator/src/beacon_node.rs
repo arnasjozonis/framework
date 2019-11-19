@@ -39,7 +39,7 @@ impl<C: Config> BeaconNode<C> for BasicBeaconNode<C> {
         res
     }
     fn compute_start_slot_at_epoch(&self, epoch: Epoch) -> Slot {
-        let res: Slot = 4;
+        let res: Slot = 0;
         res
     }
     fn get_committee_count_at_slot(&self, state: &BeaconState<C>, slot: Slot) -> u64 {

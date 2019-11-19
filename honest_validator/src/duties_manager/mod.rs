@@ -1,7 +1,8 @@
-use types::config::{ QuickConfig };
+use types::config::{ QuickConfig, Config };
 use types::beacon_state::{ BeaconState };
 use types::primitives::{ Epoch, ValidatorIndex, Slot };
 use crate::beacon_node::{ BasicBeaconNode, BeaconNode };
+use typenum::*;
 
 pub enum WorkInfo {
     SignBlock,
@@ -38,9 +39,8 @@ impl DutiesManager{
         if next_epoch < epoch { return Err(-1); };
 
         let start_slot: Slot = self.beacon_node.compute_start_slot_at_epoch(epoch);
-        //TODO: take value from config
-        let end_slot: Slot = 8;
-
+        let end_slot = <QuickConfig as Config>::SlotsPerEpoch::to_u64();
+        println!("start:{}, end: {}", start_slot, end_slot);
         for slot in start_slot..end_slot {
             let committee_count = self.beacon_node.get_committee_count_at_slot(beacon_state, slot);
             for index in 0..committee_count {
