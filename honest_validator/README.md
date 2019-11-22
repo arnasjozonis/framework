@@ -1,57 +1,34 @@
-# Honest validator client (HVC) by [ Arnas, Aurintas, Rasa ]
+# Honest validator client by [ Arnas, Aurintas, Rasa ]
 
-[comment]: # (TODO: add short description)
-_Should be short description of the project._
+Implementation of Honest validator client for 2019 VU MIF Blockchain course. Validator client written to comply [the eth2 spec](https://github.com/ethereum/eth2.0-specs/blob/dev/specs/validator/0_beacon-chain-validator.md).
 
-## Roles
+## Validator role in eth2 blockchain
 
-[comment]: # (TODO: As this is copied from lighthouse docs, use this as guide at first, but ultimately needs to be replaced by our original content)
+The Honest validator client is responsible for the following tasks:
 
-The HVC is responsible for the following tasks:
-
-- Requesting validator duties (a.k.a. shuffling) from the BN.
-- Prompting the BN to produce a new block, when a validators block production
-	duties require.
-- Completing all the fields on a new block (e.g., RANDAO reveal, signature) and
-	publishing the block to a BN.
-- Prompting the BN to produce a new shard attestation as per a validators
-	duties.
+- Requesting validator duties from the BN.
+- Prompting the BN to produce a new block, when a validators block production duties require.
+- Completing all the fields on a new block (e.g., RANDAO reveal, signature) and publishing the block to a BN.
+- Prompting the BN to produce a new shard attestation as per a validators duties.
 - Ensuring that no slashable messages are signed by a validator private key.
 - Keeping track of the system clock and how it relates to slots/epochs.
 
-The HVC is capable of managing multiple validators in the same process tree.
+## Setting up test environment
 
-## Implementation
+- Validator client can be tested with lighthouse test configuration. To set it up, please follow these instructions:
 
-[comment]: # (TODO: add short description of implementation)
-_This section describes the present implementation of this HVC binary._
+1. [Download](https://github.com/sigp/lighthouse) lighthouse eth2 implementation.
 
-### Services
+2. Follow lighthouse [instructions](http://lighthouse-book.sigmaprime.io/setup.html) for development setup.
 
-[comment]: # (TODO: add short description of services)
-_Description._
+3. After 'make' command successfully builds lighthouse application, add lightHouseRoot/target/release/lighthouse to PATH. 
+   - MAC OS: sudo ln -s PATH_TO_LIGHTHOUSE/target/release/lighthouse /usr/local/bin
+   - Windows [instructions](https://docs.alfresco.com/4.2/tasks/fot-addpath.html)
 
-#### `DutiesManagerService`
+4. run this line in terminal (8 - validators count, 157444926 - genesis start time, can be changed to whatever [UNIX time](https://duckduckgo.com/?q=unix+time&t=ffab&ia=answer)): lighthouse beacon_node testnet -f quick 8 157444926
 
-[comment]: # (TODO: add short description of services)
-_Documentation_
+5. Now, you have beacon node running and listening for HTTP API requests on localhost:5052. ([API Swagger documention](https://app.swaggerhub.com/apis-docs/spble/lighthouse_rest_api/0.2.0), note, that not all endpoints are implemented).
 
-#### `BlockProducerService`
+6. Validator keys used for testing, can be found [here](https://github.com/ethereum/eth2.0-pm/blob/9a9dbcd95e2b8e10287797bd768014ab3d842e99/interop/mocked_start/keygen_10_validators.yaml?fbclid=IwAR3jngEcUE0nmI0oWV0PMd-cdmUuiuwe-jnSsV3fuKijFej3Vz5f3OZkSyM).
 
-[comment]: # (TODO: add short description of services)
-_Documentation_
-
-#### `AttestationProducerService`
-
-[comment]: # (TODO: add short description of services)
-_Documentation_
-
-### Configuration
-
-[comment]: # (TODO: short documentation of configuration for HVC)
-_Documentation_
-
-## BN Communication
-
-[comment]: # (TODO: short documentation of communication with BN)
-_Documentation_
+7. _Run Honest Validator client, with args..._
