@@ -5,6 +5,7 @@ use hv::service::ValidatorService;
 use hv::duties_manager::DutiesManager;
 use hv::beacon_node::{BeaconNode, BasicBeaconNode};
 use clap::{App, Arg, ArgMatches, SubCommand};
+use hv::rest_client::RestClient;
 
 enum AppConfiguration {
     InternalTest,
@@ -42,4 +43,5 @@ fn main() {
     let dm = DutiesManager::new(beacon_node);
     let service: ValidatorService<EthConfigQuick> = ValidatorService::new(dm, cfg);
     service.start();
+    RestClient::start();
 }
