@@ -1,12 +1,19 @@
-use types::config::{ QuickConfig };
+use types::config::{ QuickConfig, Config };
 use types::beacon_state::{ BeaconState };
 use types::primitives::{ Epoch, ValidatorIndex, Slot };
 use crate::beacon_node::{ BasicBeaconNode, BeaconNode };
+use typenum::*;
 
 pub enum WorkInfo {
     SignBlock,
     Attest,
     None
+}
+
+pub trait Worker {
+    type SuccessType;
+    type ErrorType;
+    fn do_work(&self, state: &BeaconState<QuickConfig>) -> Result<Self::SuccessType, Self::ErrorType>;
 }
 
 pub struct DutiesManager
@@ -31,10 +38,9 @@ impl DutiesManager{
         let next_epoch = self.beacon_node.get_current_epoch(beacon_state) + 1;
         if next_epoch < epoch { return Err(-1); };
 
-        //
         let start_slot: Slot = self.beacon_node.compute_start_slot_at_epoch(epoch);
-        let end_slot: Slot = 10;
-
+        let end_slot = <QuickConfig as Config>::SlotsPerEpoch::to_u64();
+        println!("start:{}, end: {}", start_slot, end_slot);
         for slot in start_slot..end_slot {
             let committee_count = self.beacon_node.get_committee_count_at_slot(beacon_state, slot);
             for index in 0..committee_count {
@@ -50,5 +56,22 @@ impl DutiesManager{
         }
         
         Ok(WorkInfo::None)
+    }
+}
+
+pub struct TestWorker {
+    
+}
+
+impl Worker for TestWorker {
+    type SuccessType = &'static str;
+    type ErrorType = u8;
+    fn do_work(&self, state: &BeaconState<QuickConfig>) -> Result<&'static str, u8> {
+        let slot = state.slot;
+        if slot == Slot::default() {
+            Ok("Default values work")
+        } else {
+            Err(0)
+        }
     }
 }

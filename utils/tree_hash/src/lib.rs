@@ -1,3 +1,12 @@
+#![allow(macro_use_extern_crate)]
+#![allow(trivial_numeric_casts)]
+#![allow(clippy::doc_markdown)]
+#![allow(clippy::missing_const_for_fn)]
+#![allow(clippy::needless_borrow)]
+#![allow(clippy::single_match_else)]
+#![allow(clippy::unseparated_literal_suffix)]
+#![allow(clippy::use_self)]
+
 #[macro_use]
 extern crate lazy_static;
 

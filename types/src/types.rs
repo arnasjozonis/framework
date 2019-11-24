@@ -42,14 +42,6 @@ pub struct AttestationData {
 }
 
 #[derive(
-    Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot,
-)]
-pub struct AttestationDataAndCustodyBit {
-    pub data: AttestationData,
-    pub custody_bit: bool,
-}
-
-#[derive(
     Clone,
     Copy,
     PartialEq,

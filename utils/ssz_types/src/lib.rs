@@ -37,6 +37,17 @@
 //!
 //! ```
 
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::find_map)]
+#![allow(clippy::if_not_else)]
+#![allow(clippy::large_digit_groups)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::needless_borrow)]
+#![allow(clippy::needless_pass_by_value)]
+#![allow(clippy::redundant_clone)]
+#![allow(clippy::result_unwrap_used)]
+#![allow(clippy::use_self)]
+
 #[macro_use]
 mod bitfield;
 mod fixed_vector;

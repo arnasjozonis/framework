@@ -4,6 +4,8 @@
 //! 2.0 is using. The hash function has been subject to change during the specification process, so
 //! defining it once in this crate makes it easy to replace.
 
+#![allow(clippy::result_unwrap_used)]
+
 #[cfg(not(target_arch = "wasm32"))]
 use ring::digest::{digest, SHA256};
 

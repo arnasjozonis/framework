@@ -1,8 +1,7 @@
 use types::config::{ Config as EthConfig, QuickConfig};
 use types::beacon_state::{ BeaconState };
 use types::primitives::{Epoch, ValidatorIndex};
-use crate::duties_manager::DutiesManager;
-use crate::beacon_node::{BasicBeaconNode};
+use crate::duties_manager::{ DutiesManager, WorkInfo, TestWorker, Worker };
 
 pub struct ValidatorService<C: EthConfig> {
     eth_config: C,
@@ -21,10 +20,26 @@ impl<C: EthConfig> ValidatorService<C> {
         let beacon_state: BeaconState<QuickConfig> = BeaconState::default();
         let epoch: Epoch = 0;
         let validator_index: ValidatorIndex = 1;
-        match self.duties_manager.get_duty(&beacon_state, epoch, validator_index) {
-            Ok(Workinfo) => println!("It works..."),
-            Err(num) => println!{"Error code: {}", num}
+        let job = match self.duties_manager.get_duty(&beacon_state, epoch, validator_index) {
+            Ok(job) => {
+                println!("Got job...");
+                job
+            },
+            Err(num) => {
+                println!{"Error code: {}", num};
+                WorkInfo::None
+            }
         };
+        match job {
+            WorkInfo::Attest => {
+                let worker = TestWorker {};
+                println!("Attesting...");
+                println!("Attestation result: {}", worker.do_work(&beacon_state).unwrap())
+            },
+            WorkInfo::SignBlock => println!("Producing..."),
+            WorkInfo::None => println!("No work.")
+        }
+        
         &self.end();
     }
 

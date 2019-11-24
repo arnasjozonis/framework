@@ -34,6 +34,18 @@
 //!
 //! See `examples/` for manual implementations of the `Encode` and `Decode` traits.
 
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::decimal_literal_representation)]
+#![allow(clippy::doc_markdown)]
+#![allow(clippy::if_not_else)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::mut_mut)]
+#![allow(clippy::option_unwrap_used)]
+#![allow(clippy::redundant_clone)]
+#![allow(clippy::replace_consts)]
+#![allow(clippy::unseparated_literal_suffix)]
+#![allow(clippy::use_self)]
+
 mod decode;
 mod encode;
 
