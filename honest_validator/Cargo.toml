@@ -18,6 +18,8 @@ eth2_ssz = { path = "../utils/ssz"}
 eth2_ssz_types = { path = "../utils/ssz_types"}
 tree_hash = { path = "../utils/tree_hash"}
 hyper = "0.12"
-futures = "0.3.1"
+futures = "0.1.26"
 serde = "1.0.102"
 serde_json = "1.0.41"
+tokio-core = "0.1.17"
+error-chain = "0.12.1"
