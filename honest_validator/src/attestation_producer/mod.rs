@@ -15,7 +15,7 @@ pub struct AttestationProducer<C: Config> {
 }
 
 impl<C: Config> AttestationProducer<C> {
-    pub fn construct_attestation_data(&mut self, head_state: &BeaconState<QuickConfig>) -> AttestationData {
+    pub fn construct_attestation_data(&mut self, head_state: &BeaconState<MinimalConfig>) -> AttestationData {
         let epoch = self.beacon_node.get_current_epoch(head_state);
 
         let start_slot = self.beacon_node.compute_start_slot_at_epoch(epoch);
@@ -46,7 +46,7 @@ impl<C: Config> AttestationProducer<C> {
 
     pub fn get_signed_attestation_data(
         &mut self,
-        state: &BeaconState<QuickConfig>,
+        state: &BeaconState<MinimalConfig>,
         attestation_data: &AttestationData,
         privkey: &SecretKey,
     ) -> Signature {
@@ -62,7 +62,7 @@ impl<C: Config> AttestationProducer<C> {
 
     pub fn construct_attestation(
         &mut self,
-        head_state: &BeaconState<QuickConfig>,
+        head_state: &BeaconState<MinimalConfig>,
         attestation_data: AttestationData,
         attestation_duty: AttestationDuty,
     ) -> Option<Attestation<C>> {

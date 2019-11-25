@@ -1,6 +1,6 @@
 extern crate framework_honest_validator as hv;
 
-use types::config::{ QuickConfig };
+use types::config::{ MinimalConfig };
 use hv::service::ValidatorService;
 use clap::{App, Arg};
 
@@ -31,10 +31,10 @@ fn main() {
     };
 
     let cfg = match app_cfg {
-        AppConfiguration::InternalTest =>  QuickConfig::default(),
-        AppConfiguration::Unsupported =>  QuickConfig::default()
+        AppConfiguration::InternalTest =>  MinimalConfig::default(),
+        AppConfiguration::Unsupported =>  MinimalConfig::default()
     };
     
-    let service: ValidatorService<QuickConfig> = ValidatorService::new(cfg);
+    let service: ValidatorService<MinimalConfig> = ValidatorService::new(cfg);
     service.start();
 }

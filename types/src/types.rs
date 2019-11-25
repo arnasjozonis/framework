@@ -6,6 +6,7 @@ use ssz_types::{BitList, FixedVector, VariableList};
 use tree_hash::TreeHash;
 use tree_hash_derive::{SignedRoot, TreeHash};
 use typenum::{Sum, U1};
+use serde_bytes;
 
 use crate::config::*;
 use crate::consts;
@@ -169,7 +170,9 @@ pub struct Eth1Data {
     Default,
 )]
 pub struct Fork {
+    #[serde(with = "serde_bytes")]
     pub previous_version: Version,
+    #[serde(with = "serde_bytes")]
     pub current_version: Version,
     pub epoch: Epoch,
 }
