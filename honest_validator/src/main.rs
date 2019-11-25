@@ -1,11 +1,8 @@
 extern crate framework_honest_validator as hv;
 
-use types::config::{ QuickConfig as EthConfigQuick };
+use types::config::{ QuickConfig };
 use hv::service::ValidatorService;
-use hv::duties_manager::DutiesManager;
-use hv::beacon_node::{BasicBeaconNode};
 use clap::{App, Arg};
-use hv::rest_client::{RestClient};
 
 enum AppConfiguration {
     InternalTest,
@@ -34,18 +31,10 @@ fn main() {
     };
 
     let cfg = match app_cfg {
-        AppConfiguration::InternalTest =>  EthConfigQuick,
-        AppConfiguration::Unsupported =>  EthConfigQuick
+        AppConfiguration::InternalTest =>  QuickConfig::default(),
+        AppConfiguration::Unsupported =>  QuickConfig::default()
     };
-    let beacon_node = BasicBeaconNode {
-    };
-    let dm = DutiesManager::new(beacon_node);
-    let service: ValidatorService<EthConfigQuick> = ValidatorService::new(dm, cfg);
-    //service.start();
-    let mut rest_api = RestClient::new(String::from("http://localhost:5052")).unwrap();
-    let test = rest_api.get_beacon_validators();
-    match test {
-        Some(res) => println!("{}", res.first().unwrap().pubkey),
-        _ => ()
-    }
+    
+    let service: ValidatorService<QuickConfig> = ValidatorService::new(cfg);
+    service.start();
 }

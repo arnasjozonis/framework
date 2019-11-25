@@ -16,18 +16,6 @@ use std::str;
 
 use crate::errors::*;
 
-#[derive(Deserialize)]
-pub struct Validator {
-    pub pubkey: String,
-    pub withdrawal_credentials: String,
-    pub effective_balance:u128,
-    pub slashed:bool,
-    pub activation_eligibility_epoch:u64,
-    pub activation_epoch:u64,
-    pub exit_epoch:u128,
-    pub withdrawable_epoch:u128
-}
-
 pub struct RestClient {
     base_url: String,
     http: Rc<Client<HttpConnector>>,
@@ -57,15 +45,16 @@ impl RestClient {
         })
 
     }
-
-    pub fn get_beacon_validators(&mut self) -> Option<Vec<Validator>> {
+    pub fn get<TResult>(&mut self, resource_uri: &str) -> Option<TResult> 
+    where TResult: DeserializeOwned
+    {
         let host = self.base_url.clone();
-        let uri: Uri = (host + &"/beacon/validators").parse().unwrap();
+        let uri: Uri = (host + resource_uri).parse().unwrap();
         println!("{}", uri);
-        self.request(uri).unwrap()
+        self.get_request(uri).unwrap()
     }
-    
-    fn request<TResult>(&mut self, uri: Uri) -> Result<Option<TResult>>
+
+    fn get_request<TResult>(&mut self, uri: Uri) -> Result<Option<TResult>>
     where TResult: DeserializeOwned
     {
         let mut core_ref = self.core.try_borrow_mut().chain_err(|| {

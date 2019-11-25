@@ -1,26 +1,27 @@
 use types::config::{ Config as EthConfig };
 use types::primitives::{Epoch, ValidatorIndex};
-use crate::beacon_node::{BeaconState};
 use crate::duties_manager::{ DutiesManager, WorkInfo, TestWorker, Worker };
+use crate::beacon_node::{BasicBeaconNode, BeaconNode};
 
 pub struct ValidatorService<C: EthConfig> {
     eth_config: C,
-    duties_manager: DutiesManager
-    //beacon_client: BeaconClient<C>,
+    beacon_node: BasicBeaconNode
 
 }
 
 impl<C: EthConfig> ValidatorService<C> {
-    pub fn new(duties_manager: DutiesManager, eth_config: C) -> ValidatorService<C> {
-        ValidatorService { duties_manager, eth_config }
+    pub fn new(eth_config: C) -> ValidatorService<C> {
+        let beacon_node = BasicBeaconNode::new();
+        ValidatorService { eth_config, beacon_node }
     }
 
     pub fn start(&self) {
         println!("Start service work.");
-        let beacon_state = BeaconState::default();
+        let beacon_state = self.beacon_node.get_state();
+        println!("{}", beacon_state.slot);
         let epoch: Epoch = 0;
         let validator_index: ValidatorIndex = 1;
-        let job = match self.duties_manager.get_duty(&beacon_state, epoch, validator_index) {
+        let job = match DutiesManager::get_duty(&beacon_state, epoch, validator_index, &self.beacon_node) {
             Ok(job) => {
                 println!("Got job...");
                 job
