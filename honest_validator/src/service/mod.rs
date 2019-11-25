@@ -1,6 +1,6 @@
-use types::config::{ Config as EthConfig, QuickConfig};
-use types::beacon_state::{ BeaconState };
+use types::config::{ Config as EthConfig };
 use types::primitives::{Epoch, ValidatorIndex};
+use crate::beacon_node::{BeaconState};
 use crate::duties_manager::{ DutiesManager, WorkInfo, TestWorker, Worker };
 
 pub struct ValidatorService<C: EthConfig> {
@@ -17,7 +17,7 @@ impl<C: EthConfig> ValidatorService<C> {
 
     pub fn start(&self) {
         println!("Start service work.");
-        let beacon_state: BeaconState<QuickConfig> = BeaconState::default();
+        let beacon_state = BeaconState::default();
         let epoch: Epoch = 0;
         let validator_index: ValidatorIndex = 1;
         let job = match self.duties_manager.get_duty(&beacon_state, epoch, validator_index) {

@@ -1,7 +1,6 @@
 // Hyper Imports
 use hyper::client::Client;
-use hyper::StatusCode;
-use hyper::{self, HeaderMap, Uri};
+use hyper::{self, Uri};
 type HttpConnector = hyper::client::HttpConnector;
 
 use futures::future::{ ok, Future };
@@ -9,12 +8,10 @@ use futures::stream::{Stream};
 use tokio_core::reactor::Core;
 
 use serde::de::DeserializeOwned;
-use serde_json::Value;
 use serde::Deserialize;
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::io::{self, Write, Error, ErrorKind};
 use std::str;
 
 use crate::errors::*;
@@ -71,10 +68,8 @@ impl RestClient {
     fn request<TResult>(&mut self, uri: Uri) -> Result<Option<TResult>>
     where TResult: DeserializeOwned
     {
-        
         let mut core_ref = self.core.try_borrow_mut().chain_err(|| {
-            "Unable to get mutable borrow \
-             to the event loop"
+            "Error when trying to burrow mutable runtime core"
         })?;
         let client = &self.http;
         let work = client

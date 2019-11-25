@@ -1,7 +1,6 @@
 use types::config::{ QuickConfig, Config };
-use types::beacon_state::{ BeaconState };
 use types::primitives::{ Epoch, ValidatorIndex, Slot };
-use crate::beacon_node::{ BasicBeaconNode, BeaconNode };
+use crate::beacon_node::{ BasicBeaconNode, BeaconNode, BeaconState };
 use typenum::*;
 
 pub enum WorkInfo {
@@ -13,23 +12,23 @@ pub enum WorkInfo {
 pub trait Worker {
     type SuccessType;
     type ErrorType;
-    fn do_work(&self, state: &BeaconState<QuickConfig>) -> Result<Self::SuccessType, Self::ErrorType>;
+    fn do_work(&self, state: &BeaconState) -> Result<Self::SuccessType, Self::ErrorType>;
 }
 
 pub struct DutiesManager
 {
-    beacon_node: BasicBeaconNode<QuickConfig>
+    beacon_node: BasicBeaconNode
 }
 
 impl DutiesManager{
 
-    pub fn new(beacon_node: BasicBeaconNode<QuickConfig>) -> DutiesManager {
+    pub fn new(beacon_node: BasicBeaconNode) -> DutiesManager {
         DutiesManager { beacon_node }
     }
     
     pub fn get_duty(
         &self,
-        beacon_state: &BeaconState<QuickConfig>,
+        beacon_state: &BeaconState,
         epoch: Epoch,
         validator_index: ValidatorIndex
     ) -> Result<WorkInfo, i8> {
@@ -66,7 +65,7 @@ pub struct TestWorker {
 impl Worker for TestWorker {
     type SuccessType = &'static str;
     type ErrorType = u8;
-    fn do_work(&self, state: &BeaconState<QuickConfig>) -> Result<&'static str, u8> {
+    fn do_work(&self, state: &BeaconState) -> Result<&'static str, u8> {
         let slot = state.slot;
         if slot == Slot::default() {
             Ok("Default values work")
