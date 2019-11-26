@@ -1,8 +1,9 @@
-use types::primitives::{CommitteeIndex, Domain, DomainType, Epoch, Slot, ValidatorIndex, H256};
-use types::beacon_state::{BeaconState};
-use types::config::{MinimalConfig, Config};
-use serde::{Serialize, Deserialize};
 use crate::rest_client::RestClient;
+use serde::{Deserialize, Serialize};
+use types::beacon_state::BeaconState;
+use types::config::{Config, MinimalConfig};
+use types::primitives::{CommitteeIndex, Domain, DomainType, Epoch, Slot, ValidatorIndex, H256};
+use types::types::Attestation;
 
 #[derive(PartialEq, Debug)]
 pub enum Error {
@@ -28,8 +29,16 @@ pub trait BeaconNode {
         index: CommitteeIndex,
     ) -> Vec<ValidatorIndex>;
     fn get_beacon_proposer_index(&self, state: &BeaconState<MinimalConfig>) -> ValidatorIndex;
-    fn get_block_root(&self, state: &BeaconState<MinimalConfig>, epoch: Epoch) -> Result<H256, Error>;
-    fn get_block_root_at_slot(&self, state: &BeaconState<MinimalConfig>, slot: Slot) -> Result<H256, Error>;
+    fn get_block_root(
+        &self,
+        state: &BeaconState<MinimalConfig>,
+        epoch: Epoch,
+    ) -> Result<H256, Error>;
+    fn get_block_root_at_slot(
+        &self,
+        state: &BeaconState<MinimalConfig>,
+        slot: Slot,
+    ) -> Result<H256, Error>;
     fn get_domain(
         &self,
         state: &BeaconState<MinimalConfig>,
@@ -50,20 +59,28 @@ impl BasicBeaconNode {
         let state: BeaconStateResponse = bn.get(&"/beacon/state").unwrap();
         BasicBeaconNode {
             bn,
-            last_known_state: state.beacon_state
+            last_known_state: state.beacon_state,
         }
     }
 
     pub fn update_state(&mut self) -> () {
         match self.bn.get(&"/beacon/state") {
             Some(state) => self.last_known_state = state,
-            None => println!("failed update state")
+            None => println!("failed update state"),
+        };
+    }
+
+    pub fn publish_attestation(&mut self) -> () {
+        const PUBLISH_ATTESTATION_URL: &str = "/validator/attestation";
+
+        match self.bn.post(&PUBLISH_ATTESTATION_URL) {
+            Some(state) => self.last_known_state = state,
+            None => println!("failed publish attestation"),
         };
     }
 }
 
 impl BeaconNode for BasicBeaconNode {
-
     fn get_state(&self) -> &BeaconState<MinimalConfig> {
         &self.last_known_state
     }
@@ -97,10 +114,18 @@ impl BeaconNode for BasicBeaconNode {
         let res: ValidatorIndex = 3;
         res
     }
-    fn get_block_root(&self, state: &BeaconState<MinimalConfig>, epoch: Epoch) -> Result<H256, Error> {
-        Err(Error::IndexOutOfRange)
+    fn get_block_root(
+        &self,
+        state: &BeaconState<MinimalConfig>,
+        epoch: Epoch,
+    ) -> Result<H256, Error> {
+        Ok(H256::from([0; 32]))
     }
-    fn get_block_root_at_slot(&self, state: &BeaconState<MinimalConfig>, slot: Slot) -> Result<H256, Error> {
+    fn get_block_root_at_slot(
+        &self,
+        state: &BeaconState<MinimalConfig>,
+        slot: Slot,
+    ) -> Result<H256, Error> {
         Ok(H256::from([0; 32]))
     }
     fn get_domain(
