@@ -18,9 +18,14 @@ impl<C: EthConfig> ValidatorService<C> {
     }
 
     pub fn start(&self) {
-        println!("Start service work.");
+        println!("Start service work. Fetchin current beacon state...");
         let beacon_state = self.beacon_node.get_state();
-        println!("{}", beacon_state.slot);
+        println!(
+            "State fetched: slot: {}, epoch: {}, genesis_time: {}", 
+            beacon_state.slot, 
+            beacon_state.fork.epoch, 
+            beacon_state.genesis_time
+        );
         let epoch: Epoch = 0;
         let validator_index: ValidatorIndex = 1;
         let job =
