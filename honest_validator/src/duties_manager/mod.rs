@@ -1,36 +1,38 @@
-use types::config::{ MinimalConfig, Config };
-use types::primitives::{ Epoch, ValidatorIndex, Slot };
-use types::beacon_state::{BeaconState};
-use crate::beacon_node::{ BasicBeaconNode, BeaconNode };
+use crate::beacon_node::{BasicBeaconNode, BeaconNode};
 use typenum::*;
+use types::beacon_state::BeaconState;
+use types::config::{Config, MinimalConfig};
+use types::primitives::{Epoch, Slot, ValidatorIndex};
 
 pub enum WorkInfo {
     SignBlock,
     Attest,
-    None
+    None,
 }
 
 pub trait Worker {
     type SuccessType;
     type ErrorType;
-    fn do_work(&self, state: &BeaconState<MinimalConfig>) -> Result<Self::SuccessType, Self::ErrorType>;
+    fn do_work(
+        &self,
+        state: &BeaconState<MinimalConfig>,
+    ) -> Result<Self::SuccessType, Self::ErrorType>;
 }
 
-pub struct DutiesManager
-{
-}
+pub struct DutiesManager {}
 
-impl DutiesManager{
+impl DutiesManager {
     pub fn get_duty(
         beacon_state: &BeaconState<MinimalConfig>,
         epoch: Epoch,
         validator_index: ValidatorIndex,
-        beacon_node: &BasicBeaconNode
+        beacon_node: &BasicBeaconNode,
     ) -> Result<WorkInfo, String> {
-
         let next_epoch = beacon_node.get_current_epoch(beacon_state) + 1;
-        if next_epoch < epoch { 
-            return Err(String::from("Epoch to request duties is too far in the future")); 
+        if next_epoch < epoch {
+            return Err(String::from(
+                "Epoch to request duties is too far in the future",
+            ));
         };
 
         let start_slot: Slot = beacon_node.compute_start_slot_at_epoch(epoch);
@@ -39,23 +41,18 @@ impl DutiesManager{
             let committee_count = beacon_node.get_committee_count_at_slot(beacon_state, slot);
             for index in 0..committee_count {
                 let committee = beacon_node.get_beacon_committee(beacon_state, slot, index);
-                let assignment = committee.iter().find(|&&idx| {
-                    idx == validator_index
-                });
+                let assignment = committee.iter().find(|&&idx| idx == validator_index);
                 return match assignment {
                     Some(val) => Ok(WorkInfo::Attest),
-                    None => Ok(WorkInfo::None)
-                }
+                    None => Ok(WorkInfo::None),
+                };
             }
         }
-        
         Ok(WorkInfo::None)
     }
 }
 
-pub struct TestWorker {
-    
-}
+pub struct TestWorker {}
 
 impl Worker for TestWorker {
     type SuccessType = &'static str;

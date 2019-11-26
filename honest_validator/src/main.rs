@@ -1,12 +1,12 @@
 extern crate framework_honest_validator as hv;
 
-use types::config::{ MinimalConfig };
-use hv::service::ValidatorService;
 use clap::{App, Arg};
+use hv::service::ValidatorService;
+use types::config::MinimalConfig;
 
 enum AppConfiguration {
     InternalTest,
-    Unsupported
+    Unsupported,
 }
 
 fn main() {
@@ -22,8 +22,9 @@ fn main() {
                 .value_name("CONFIGURATION")
                 .help("Specifies the default eth2 spec type.")
                 .takes_value(true)
-                .possible_values(&["mainnet", "minimal", "internal_test"])
-        ).get_matches();
+                .possible_values(&["mainnet", "minimal", "internal_test"]),
+        )
+        .get_matches();
 
     let app_cfg = match matches.value_of("spec") {
         Some("internal_test") => AppConfiguration::InternalTest,
@@ -31,10 +32,9 @@ fn main() {
     };
 
     let cfg = match app_cfg {
-        AppConfiguration::InternalTest =>  MinimalConfig::default(),
-        AppConfiguration::Unsupported =>  MinimalConfig::default()
+        AppConfiguration::InternalTest => MinimalConfig::default(),
+        AppConfiguration::Unsupported => MinimalConfig::default(),
     };
-    
     let service: ValidatorService<MinimalConfig> = ValidatorService::new(cfg);
     service.start();
 }

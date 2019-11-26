@@ -1,12 +1,12 @@
 use crate::beacon_node::{BasicBeaconNode, BeaconNode};
 use bls::{SecretKey, Signature};
 use ssz_types::BitList;
+use std::convert::TryInto;
 use tree_hash::TreeHash;
 use types::beacon_state::BeaconState;
 use types::config::*;
 use types::primitives::{CommitteeIndex, Slot, ValidatorIndex};
 use types::types::{Attestation, AttestationData, Checkpoint};
-use std::convert::TryInto;
 
 pub struct AttestationProducer<C: Config> {
     pub config: C,
@@ -76,7 +76,9 @@ impl<C: Config> AttestationProducer<C> {
             .len();
 
         let mut aggregation_bits = BitList::with_capacity(committee_len).ok()?;
-        aggregation_bits.set(validator_index.try_into().unwrap(), true).ok()?;
+        aggregation_bits
+            .set(validator_index.try_into().unwrap(), true)
+            .ok()?;
 
         let privkey = SecretKey::random();
         let signed_attestation_data =

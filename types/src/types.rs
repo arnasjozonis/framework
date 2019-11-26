@@ -1,12 +1,12 @@
 //temporary Lighthouse SSZ and hashing implementation
 use bls::PublicKeyBytes;
 use serde::{Deserialize, Serialize};
+use serde_bytes;
 use ssz_derive::{Decode, Encode};
 use ssz_types::{BitList, FixedVector, VariableList};
 use tree_hash::TreeHash;
 use tree_hash_derive::{SignedRoot, TreeHash};
 use typenum::{Sum, U1};
-use serde_bytes;
 
 use crate::config::*;
 use crate::consts;

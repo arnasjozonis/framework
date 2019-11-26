@@ -21,10 +21,8 @@ impl<C: EthConfig> ValidatorService<C> {
         println!("Start service work. Fetchin current beacon state...");
         let beacon_state = self.beacon_node.get_state();
         println!(
-            "State fetched: slot: {}, epoch: {}, genesis_time: {}", 
-            beacon_state.slot, 
-            beacon_state.fork.epoch, 
-            beacon_state.genesis_time
+            "State fetched: slot: {}, epoch: {}, genesis_time: {}",
+            beacon_state.slot, beacon_state.fork.epoch, beacon_state.genesis_time
         );
         let epoch: Epoch = 0;
         let validator_index: ValidatorIndex = 1;
@@ -68,6 +66,8 @@ impl<C: EthConfig> ValidatorService<C> {
                 );
 
                 println!("Attestation result: {}", attestation.is_some());
+
+                //self.beacon_node.publish_attestation(attestation);
             }
             WorkInfo::SignBlock => println!("Producing..."),
             WorkInfo::None => println!("No work."),

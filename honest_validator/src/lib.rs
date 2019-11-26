@@ -5,8 +5,8 @@ extern crate error_chain;
 mod macros;
 
 pub mod attestation_producer;
-pub mod service;
-pub mod duties_manager;
 pub mod beacon_node;
-pub mod rest_client;
+pub mod duties_manager;
 pub mod errors;
+pub mod rest_client;
+pub mod service;
