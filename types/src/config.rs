@@ -268,6 +268,10 @@ where
     fn whistleblower_reward_quotient() -> u64 {
         512
     }
+
+    fn millisecons_per_slot() -> u64 {
+        12000
+    }
 }
 
 #[derive(
