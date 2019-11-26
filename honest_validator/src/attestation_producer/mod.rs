@@ -1,21 +1,25 @@
-use crate::beacon_node::{BeaconNode, BasicBeaconNode};
+use crate::beacon_node::{BasicBeaconNode, BeaconNode};
 use bls::{SecretKey, Signature};
 use ssz_types::BitList;
 use tree_hash::TreeHash;
 use types::beacon_state::BeaconState;
 use types::config::*;
-use types::primitives::{Epoch, H256};
-use types::types::{
-    Attestation, AttestationData, AttestationDuty, Checkpoint,
-};
+use types::primitives::{CommitteeIndex, Slot, ValidatorIndex};
+use types::types::{Attestation, AttestationData, Checkpoint};
+use std::convert::TryInto;
 
 pub struct AttestationProducer<C: Config> {
     pub config: C,
-    pub beacon_node: BasicBeaconNode
+    pub beacon_node: BasicBeaconNode,
 }
 
 impl<C: Config> AttestationProducer<C> {
-    pub fn construct_attestation_data(&mut self, head_state: &BeaconState<MinimalConfig>) -> AttestationData {
+    pub fn construct_attestation_data(
+        &mut self,
+        head_state: &BeaconState<MinimalConfig>,
+        assigned_slot: Slot,
+        committee_index: CommitteeIndex,
+    ) -> AttestationData {
         let epoch = self.beacon_node.get_current_epoch(head_state);
 
         let start_slot = self.beacon_node.compute_start_slot_at_epoch(epoch);
@@ -34,8 +38,8 @@ impl<C: Config> AttestationProducer<C> {
         };
 
         let attestation_data = AttestationData {
-            index: 0, // TODO: set to correct one from service
-            slot: head_state.slot,
+            index: committee_index,
+            slot: assigned_slot,
             beacon_block_root: self.beacon_node.get_block_root(head_state, epoch).unwrap(),
             source: head_state.current_justified_checkpoint.clone(),
             target,
@@ -44,17 +48,15 @@ impl<C: Config> AttestationProducer<C> {
         attestation_data
     }
 
-    pub fn get_signed_attestation_data(
+    fn get_signed_attestation_data(
         &mut self,
         state: &BeaconState<MinimalConfig>,
         attestation_data: &AttestationData,
         privkey: &SecretKey,
     ) -> Signature {
-        let DOMAIN_BEACON_ATTESTER = 1;
-
         let domain = self.beacon_node.get_domain(
             state,
-            DOMAIN_BEACON_ATTESTER,
+            MinimalConfig::domain_attestation(),
             Some(attestation_data.target.epoch),
         );
         Signature::new(&attestation_data.tree_hash_root()[..], domain, privkey)
@@ -64,12 +66,17 @@ impl<C: Config> AttestationProducer<C> {
         &mut self,
         head_state: &BeaconState<MinimalConfig>,
         attestation_data: AttestationData,
-        attestation_duty: AttestationDuty,
+        assigned_slot: Slot,
+        committee_index: CommitteeIndex,
+        validator_index: ValidatorIndex,
     ) -> Option<Attestation<C>> {
-        let mut aggregation_bits = BitList::with_capacity(attestation_duty.committee_len).ok()?;
-        aggregation_bits
-            .set(attestation_duty.committee_index, true)
-            .ok()?;
+        let committee_len = self
+            .beacon_node
+            .get_beacon_committee(head_state, assigned_slot, committee_index)
+            .len();
+
+        let mut aggregation_bits = BitList::with_capacity(committee_len).ok()?;
+        aggregation_bits.set(validator_index.try_into().unwrap(), true).ok()?;
 
         let privkey = SecretKey::random();
         let signed_attestation_data =
@@ -78,7 +85,6 @@ impl<C: Config> AttestationProducer<C> {
         Some(Attestation {
             aggregation_bits,
             data: attestation_data.clone(),
-            custody_bits: BitList::with_capacity(attestation_duty.committee_len).ok()?,
             signature: signed_attestation_data,
         })
     }

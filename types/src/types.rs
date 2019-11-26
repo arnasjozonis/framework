@@ -16,7 +16,6 @@ use crate::primitives::*;
 pub struct Attestation<C: Config> {
     pub aggregation_bits: BitList<C::MaxValidatorsPerCommittee>,
     pub data: AttestationData,
-    pub custody_bits: BitList<C::MaxValidatorsPerCommittee>,
     pub signature: Signature,
 }
 

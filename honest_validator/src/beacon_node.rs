@@ -38,6 +38,7 @@ pub trait BeaconNode {
     ) -> Domain;
 }
 
+#[derive(Clone)]
 pub struct BasicBeaconNode {
     pub bn: RestClient,
     last_known_state: BeaconState<MinimalConfig>,
