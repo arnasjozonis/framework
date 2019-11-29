@@ -1,17 +1,12 @@
 extern crate framework_honest_validator as hv;
 
-use types::config::{ QuickConfig as EthConfigQuick };
+use clap::{App, Arg};
 use hv::service::ValidatorService;
-use hv::duties_manager::DutiesManager;
-use hv::beacon_node::{BeaconNode, BasicBeaconNode};
-use clap::{App, Arg, ArgMatches, SubCommand};
-use hv::rest_client::{RestClient, Validator};
-use hv::errors::*;
-
+use types::config::MinimalConfig;
 
 enum AppConfiguration {
     InternalTest,
-    Unsupported
+    Unsupported,
 }
 
 fn main() {
@@ -27,8 +22,9 @@ fn main() {
                 .value_name("CONFIGURATION")
                 .help("Specifies the default eth2 spec type.")
                 .takes_value(true)
-                .possible_values(&["mainnet", "minimal", "internal_test"])
-        ).get_matches();
+                .possible_values(&["mainnet", "minimal", "internal_test"]),
+        )
+        .get_matches();
 
     let app_cfg = match matches.value_of("spec") {
         Some("internal_test") => AppConfiguration::InternalTest,
@@ -36,19 +32,9 @@ fn main() {
     };
 
     let cfg = match app_cfg {
-        AppConfiguration::InternalTest =>  EthConfigQuick,
-        AppConfiguration::Unsupported =>  EthConfigQuick
+        AppConfiguration::InternalTest => MinimalConfig::default(),
+        AppConfiguration::Unsupported => MinimalConfig::default(),
     };
-    let beacon_node = BasicBeaconNode {
-        Cfg: cfg
-    };
-    let dm = DutiesManager::new(beacon_node);
-    let service: ValidatorService<EthConfigQuick> = ValidatorService::new(dm, cfg);
-    //service.start();
-    let mut rest_api = RestClient::new(String::from("http://localhost:5052")).unwrap();
-    let test = rest_api.get_beacon_validators();
-    match test {
-        Some(res) => println!("{}", res.first().unwrap().pubkey),
-        _ => ()
-    }
+    let service: ValidatorService<MinimalConfig> = ValidatorService::new(cfg);
+    service.start();
 }

@@ -6,7 +6,7 @@ use core::hash::Hash;
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
 
-use crate::primitives::ValidatorIndex;
+use crate::primitives::{DomainType, ValidatorIndex};
 
 pub trait Config
 where
@@ -185,22 +185,22 @@ where
     fn churn_limit_quotient() -> u64 {
         0x0001_0000
     }
-    fn domain_attestation() -> u64 {
-        2
-    }
-    fn domain_beacon_proposer() -> u64 {
-        0
-    }
-    fn domain_deposit() -> u64 {
-        3
-    }
-    fn domain_randao() -> u64 {
+    fn domain_attestation() -> DomainType {
         1
     }
-    fn domain_transfer() -> u64 {
+    fn domain_beacon_proposer() -> DomainType {
+        0
+    }
+    fn domain_deposit() -> DomainType {
+        3
+    }
+    fn domain_randao() -> DomainType {
+        2
+    }
+    fn domain_transfer() -> DomainType {
         5
     }
-    fn domain_voluntary_exit() -> u64 {
+    fn domain_voluntary_exit() -> DomainType {
         4
     }
     fn effective_balance_increment() -> u64 {
@@ -267,6 +267,10 @@ where
     }
     fn whistleblower_reward_quotient() -> u64 {
         512
+    }
+
+    fn millisecons_per_slot() -> u64 {
+        12000
     }
 }
 

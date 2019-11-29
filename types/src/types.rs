@@ -1,6 +1,7 @@
 //temporary Lighthouse SSZ and hashing implementation
 use bls::PublicKeyBytes;
 use serde::{Deserialize, Serialize};
+use serde_bytes;
 use ssz_derive::{Decode, Encode};
 use ssz_types::{BitList, FixedVector, VariableList};
 use tree_hash::TreeHash;
@@ -15,7 +16,6 @@ use crate::primitives::*;
 pub struct Attestation<C: Config> {
     pub aggregation_bits: BitList<C::MaxValidatorsPerCommittee>,
     pub data: AttestationData,
-    pub custody_bits: BitList<C::MaxValidatorsPerCommittee>,
     pub signature: Signature,
 }
 
@@ -169,7 +169,9 @@ pub struct Eth1Data {
     Default,
 )]
 pub struct Fork {
+    #[serde(with = "serde_bytes")]
     pub previous_version: Version,
+    #[serde(with = "serde_bytes")]
     pub current_version: Version,
     pub epoch: Epoch,
 }

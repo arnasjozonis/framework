@@ -21,9 +21,7 @@ The Honest validator client is responsible for the following tasks:
 
 2. Follow lighthouse [instructions](http://lighthouse-book.sigmaprime.io/setup.html) for development setup.
 
-3. After 'make' command successfully builds lighthouse application, add lightHouseRoot/target/release/lighthouse to PATH. 
-   - MAC OS: sudo ln -s PATH_TO_LIGHTHOUSE/target/release/lighthouse /usr/local/bin
-   - Windows [instructions](https://docs.alfresco.com/4.2/tasks/fot-addpath.html)
+3. After 'make' command successfully builds lighthouse application, add lighthouse to path with command: cargo install --path lighthouse
 
 4. run this line in terminal (8 - validators count, 157444926 - genesis start time, can be changed to whatever [UNIX time](https://duckduckgo.com/?q=unix+time&t=ffab&ia=answer)): lighthouse beacon_node testnet -f quick 8 157444926
 

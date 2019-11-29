@@ -26,12 +26,6 @@ pub struct BeaconState<C: Config> {
     pub validators: VariableList<Validator, C::ValidatorRegistryLimit>,
     pub balances: VariableList<u64, C::ValidatorRegistryLimit>,
 
-    // Shuffling
-    pub start_shard: u64,
-    pub randao_mixes: FixedVector<H256, C::EpochsPerHistoricalVector>,
-    pub active_index_roots: FixedVector<H256, C::EpochsPerHistoricalVector>,
-    pub compact_committees_roots: FixedVector<H256, C::EpochsPerHistoricalVector>,
-
     // Slashings
     pub slashings: FixedVector<u64, C::EpochsPerSlashingsVector>,
 
@@ -39,10 +33,6 @@ pub struct BeaconState<C: Config> {
     pub previous_epoch_attestations:
         VariableList<PendingAttestation<C>, C::MaxAttestationsPerEpoch>,
     pub current_epoch_attestations: VariableList<PendingAttestation<C>, C::MaxAttestationsPerEpoch>,
-
-    // Crosslinks
-    pub previous_crosslinks: FixedVector<Crosslink, C::ShardCount>,
-    pub current_crosslinks: FixedVector<Crosslink, C::ShardCount>,
 
     // Finality
     pub justification_bits: BitVector<consts::JustificationBitsLength>,
