@@ -28,7 +28,7 @@ impl DutiesManager {
         validator_index: ValidatorIndex,
         beacon_node: &BasicBeaconNode,
     ) -> Result<WorkInfo, String> {
-        let next_epoch = beacon_node.get_current_epoch(beacon_state) + 1;
+        let next_epoch = beacon_state.fork.epoch + 1;
         if next_epoch < epoch {
             return Err(String::from(
                 "Epoch to request duties is too far in the future",

@@ -16,8 +16,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::str;
 
-use crate::errors::*;
-
 pub struct RestClient {
     base_url: String,
     http: Rc<Client<HttpConnector>>,
@@ -35,10 +33,10 @@ impl Clone for RestClient {
 }
 
 impl RestClient {
-    pub fn new(base_url: String) -> Result<RestClient> {
-        let core = Core::new()?;
+    pub fn new(base_url: String) -> Option<RestClient> {
+        let core = Core::new().unwrap();
         let http = Client::builder().build(HttpConnector::new(4));
-        Ok(RestClient {
+        Some(RestClient {
             core: Rc::new(RefCell::new(core)),
             http: Rc::new(http),
             base_url,
@@ -55,14 +53,14 @@ impl RestClient {
         self.post_request(uri).unwrap()
     }
 
-    fn post_request<TResult>(&mut self, uri: Uri) -> Result<Option<TResult>>
+    fn post_request<TResult>(&mut self, uri: Uri) -> Option<TResult>
     where
         TResult: DeserializeOwned,
     {
         let mut core_ref = self
             .core
             .try_borrow_mut()
-            .chain_err(|| "Error when trying to burrow mutable runtime core")?;
+            .unwrap();
         let client = &self.http;
 
         let json = r#"{"library":"hyper"}"#;
@@ -83,18 +81,14 @@ impl RestClient {
                 })
                 .map(move |chunks| {
                     if chunks.is_empty() {
-                        Ok(None)
+                        None
                     } else {
-                        Ok(Some(
-                            serde_json::from_slice(&chunks)
-                                .chain_err(|| "Failed to parse response body")?,
-                        ))
+                        Some(serde_json::from_slice(&chunks).unwrap())
                     }
                 })
         });
         core_ref
-            .run(work)
-            .chain_err(|| "Failed to execute request")?
+            .run(work).unwrap().unwrap()
     }
 
     pub fn get<TResult>(&mut self, resource_uri: &str) -> Option<TResult>
@@ -107,14 +101,14 @@ impl RestClient {
         self.get_request(uri).unwrap()
     }
 
-    fn get_request<TResult>(&mut self, uri: Uri) -> Result<Option<TResult>>
+    fn get_request<TResult>(&mut self, uri: Uri) -> Option<TResult>
     where
         TResult: DeserializeOwned,
     {
         let mut core_ref = self
             .core
             .try_borrow_mut()
-            .chain_err(|| "Error when trying to burrow mutable runtime core")?;
+            .unwrap();
         let client = &self.http;
         let work = client.get(uri).and_then(|res| {
             res.into_body()
@@ -124,17 +118,13 @@ impl RestClient {
                 })
                 .map(move |chunks| {
                     if chunks.is_empty() {
-                        Ok(None)
+                        None
                     } else {
-                        Ok(Some(
-                            serde_json::from_slice(&chunks)
-                                .chain_err(|| "Failed to parse response body")?,
-                        ))
+                        Some(serde_json::from_slice(&chunks).unwrap())
                     }
                 })
         });
         core_ref
-            .run(work)
-            .chain_err(|| "Failed to execute request")?
+            .run(work).unwrap().unwrap()
     }
 }

@@ -23,7 +23,7 @@ The Honest validator client is responsible for the following tasks:
 
 3. After 'make' command successfully builds lighthouse application, add lighthouse to path with command: cargo install --path lighthouse
 
-4. run this line in terminal (8 - validators count, 157444926 - genesis start time, can be changed to whatever [UNIX time](https://duckduckgo.com/?q=unix+time&t=ffab&ia=answer)): lighthouse beacon_node testnet -f quick 8 157444926
+4. run this line in terminal (8 - validators count, 157444926 - genesis start time, can be changed to whatever [UNIX time](https://duckduckgo.com/?q=unix+time&t=ffab&ia=answer)): lighthouse beacon_node testnet -f quick 64 1575910257
 
 5. Now, you have beacon node running and listening for HTTP API requests on localhost:5052. ([API Swagger documention](https://app.swaggerhub.com/apis-docs/spble/lighthouse_rest_api/0.2.0), note, that not all endpoints are implemented).
 

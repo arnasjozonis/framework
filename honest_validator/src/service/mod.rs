@@ -3,6 +3,7 @@ use crate::beacon_node::{BasicBeaconNode, BeaconNode};
 use crate::duties_manager::{DutiesManager, TestWorker, WorkInfo, Worker};
 use types::config::Config as EthConfig;
 use types::primitives::{CommitteeIndex, Epoch, ValidatorIndex};
+use std::{thread, time};
 
 pub struct ValidatorService<C: EthConfig> {
     eth_config: C,
@@ -18,59 +19,68 @@ impl<C: EthConfig> ValidatorService<C> {
     }
 
     pub fn start(&self) {
-        println!("Start service work. Fetchin current beacon state...");
-        let beacon_state = self.beacon_node.get_state();
-        println!(
-            "State fetched: slot: {}, epoch: {}, genesis_time: {}",
-            beacon_state.slot, beacon_state.fork.epoch, beacon_state.genesis_time
-        );
-        let epoch: Epoch = 0;
-        let validator_index: ValidatorIndex = 1;
-        let job =
-            match DutiesManager::get_duty(&beacon_state, epoch, validator_index, &self.beacon_node)
-            {
-                Ok(job) => {
-                    println!("Got job...");
-                    job
-                }
-                Err(num) => {
-                    println! {"Error code: {}", num};
-                    WorkInfo::None
-                }
-            };
-        match job {
-            WorkInfo::Attest => {
-                println!("Attesting...");
-
-                let worker = TestWorker {};
-                println!("Worker result: {}", worker.do_work(&beacon_state).unwrap());
-
-                let mut attestation_producer = AttestationProducer {
-                    config: self.eth_config,
-                    beacon_node: self.beacon_node.clone(),
+        let mut counter = 0u128;
+        loop {
+            println!("Fetching current beacon state...");
+            let beacon_state = self.beacon_node.get_state();
+            println!(
+                "State fetched: slot: {}, epoch: {}, genesis_time: {}",
+                beacon_state.slot, beacon_state.fork.epoch, beacon_state.genesis_time
+            );
+            let epoch: Epoch = 0;
+            let validator_index: ValidatorIndex = 0;
+            let job =
+                match DutiesManager::get_duty(&beacon_state, epoch, validator_index, &self.beacon_node)
+                {
+                    Ok(job) => {
+                        println!("Got job...");
+                        job
+                    }
+                    Err(num) => {
+                        println! {"Error code: {}", num};
+                        WorkInfo::None
+                    }
                 };
+            match job {
+                WorkInfo::Attest => {
+                    println!("Attesting...");
 
-                let commitee_index: CommitteeIndex = 1;
-                let attestation_data = attestation_producer.construct_attestation_data(
-                    beacon_state,
-                    beacon_state.slot,
-                    commitee_index,
-                );
+                    let worker = TestWorker {};
+                    println!("Worker result: {}", worker.do_work(&beacon_state).unwrap());
 
-                let attestation = attestation_producer.construct_attestation(
-                    beacon_state,
-                    attestation_data,
-                    beacon_state.slot,
-                    commitee_index,
-                    validator_index,
-                );
+                    let mut attestation_producer = AttestationProducer {
+                        config: self.eth_config,
+                        beacon_node: self.beacon_node.clone(),
+                    };
 
-                println!("Attestation result: {}", attestation.is_some());
+                    let commitee_index: CommitteeIndex = 1;
+                    let attestation_data = attestation_producer.construct_attestation_data(
+                        beacon_state,
+                        beacon_state.slot,
+                        commitee_index,
+                    );
 
-                //self.beacon_node.publish_attestation(attestation);
+                    let attestation = attestation_producer.construct_attestation(
+                        beacon_state,
+                        attestation_data,
+                        beacon_state.slot,
+                        commitee_index,
+                        validator_index,
+                    );
+
+                    println!("Attestation result: {}", attestation.is_some());
+
+                    //self.beacon_node.publish_attestation(attestation);
+                }
+                WorkInfo::SignBlock => println!("Producing..."),
+                WorkInfo::None => println!("No work."),
             }
-            WorkInfo::SignBlock => println!("Producing..."),
-            WorkInfo::None => println!("No work."),
+            let ten_millis = time::Duration::from_millis(6500);
+            thread::sleep(ten_millis);
+            counter = counter + 1;
+            if counter > 10 {
+                break;
+            }
         }
         &self.end();
     }
