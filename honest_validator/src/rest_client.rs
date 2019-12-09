@@ -43,7 +43,7 @@ impl RestClient {
         })
     }
 
-    pub fn post<TResult>(&mut self, resource_uri: &str) -> Option<TResult>
+    pub fn post<TResult>(&self, resource_uri: &str) -> Option<TResult>
     where
         TResult: DeserializeOwned,
     {
@@ -53,7 +53,7 @@ impl RestClient {
         self.post_request(uri).unwrap()
     }
 
-    fn post_request<TResult>(&mut self, uri: Uri) -> Option<TResult>
+    fn post_request<TResult>(&self, uri: Uri) -> Option<TResult>
     where
         TResult: DeserializeOwned,
     {
@@ -91,7 +91,7 @@ impl RestClient {
             .run(work).unwrap().unwrap()
     }
 
-    pub fn get<TResult>(&mut self, resource_uri: &str) -> Option<TResult>
+    pub fn get<TResult>(&self, resource_uri: &str) -> Option<TResult>
     where
         TResult: DeserializeOwned,
     {
@@ -101,7 +101,7 @@ impl RestClient {
         self.get_request(uri).unwrap()
     }
 
-    fn get_request<TResult>(&mut self, uri: Uri) -> Option<TResult>
+    fn get_request<TResult>(&self, uri: Uri) -> Option<TResult>
     where
         TResult: DeserializeOwned,
     {

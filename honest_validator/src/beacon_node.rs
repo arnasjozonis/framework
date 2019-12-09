@@ -4,11 +4,14 @@ use types::beacon_state::BeaconState;
 use types::config::{Config, MinimalConfig};
 use types::primitives::{CommitteeIndex, Domain, DomainType, Epoch, Slot, ValidatorIndex, H256};
 use types::types::Attestation;
+use std::rc::Rc;
+use bls::PublicKeyBytes;
 
 #[derive(PartialEq, Debug)]
 pub enum Error {
     SlotOutOfRange,
     IndexOutOfRange,
+    ApiError
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -17,28 +20,43 @@ pub struct BeaconStateResponse {
     pub beacon_state: BeaconState<MinimalConfig>,
 }
 
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct DutyInfo {
+    pub validator_pubkey: String,
+    pub attestation_slot: Slot,
+    pub attestation_committee_index: CommitteeIndex,
+    pub block_proposal_slot: Option<Slot>
+}
+
 pub trait BeaconNode {
     fn get_state(&self) -> &BeaconState<MinimalConfig>;
+
     fn get_current_epoch(&self, state: &BeaconState<MinimalConfig>) -> Epoch;
+
     fn compute_start_slot_at_epoch(&self, epoch: Epoch) -> Slot;
-    fn get_committee_count_at_slot(&self, state: &BeaconState<MinimalConfig>, slot: Slot) -> u64;
     fn get_beacon_committee(
         &self,
         state: &BeaconState<MinimalConfig>,
         slot: Slot,
         index: CommitteeIndex,
     ) -> Vec<ValidatorIndex>;
-    fn get_beacon_proposer_index(&self, state: &BeaconState<MinimalConfig>) -> ValidatorIndex;
     fn get_block_root(
         &self,
         state: &BeaconState<MinimalConfig>,
         epoch: Epoch,
     ) -> Result<H256, Error>;
+
+    fn get_duty(
+        &self,
+        epoch: Epoch,
+    ) -> Vec<DutyInfo>;
+
     fn get_block_root_at_slot(
         &self,
         state: &BeaconState<MinimalConfig>,
         slot: Slot,
     ) -> Result<H256, Error>;
+
     fn get_domain(
         &self,
         state: &BeaconState<MinimalConfig>,
@@ -49,22 +67,23 @@ pub trait BeaconNode {
 
 #[derive(Clone)]
 pub struct BasicBeaconNode {
-    pub bn: RestClient,
+    pub beacon_node_rest_client: Rc<RestClient>,
     last_known_state: BeaconState<MinimalConfig>,
 }
 
 impl BasicBeaconNode {
     pub fn new() -> BasicBeaconNode {
-        let mut bn = RestClient::new(String::from("http://localhost:5052")).unwrap();
-        let state: BeaconStateResponse = bn.get(&"/beacon/state").unwrap();
+        let beacon_node_rest_client = Rc::new(RestClient::new(String::from("http://localhost:5052")).unwrap());
+        let state: BeaconStateResponse = beacon_node_rest_client.get(&"/beacon/state").unwrap();
         BasicBeaconNode {
-            bn,
+            beacon_node_rest_client,
             last_known_state: state.beacon_state,
         }
     }
 
     pub fn update_state(&mut self) -> () {
-        match self.bn.get(&"/beacon/state") {
+        let client = &self.beacon_node_rest_client;
+        match client.get(&"/beacon/state") {
             Some(state) => self.last_known_state = state,
             None => println!("failed update state"),
         };
@@ -72,8 +91,8 @@ impl BasicBeaconNode {
 
     pub fn publish_attestation(&mut self) -> () {
         const PUBLISH_ATTESTATION_URL: &str = "/validator/attestation";
-
-        match self.bn.post(&PUBLISH_ATTESTATION_URL) {
+        let client = &self.beacon_node_rest_client;
+        match client.post(&PUBLISH_ATTESTATION_URL) {
             Some(state) => self.last_known_state = state,
             None => println!("failed publish attestation"),
         };
@@ -86,17 +105,9 @@ impl BeaconNode for BasicBeaconNode {
     }
 
     fn get_current_epoch(&self, state: &BeaconState<MinimalConfig>) -> Epoch {
-        let res: Epoch = 0;
-        res
+        state.slot / 8
     }
-    fn compute_start_slot_at_epoch(&self, epoch: Epoch) -> Slot {
-        let res: Slot = 0;
-        res
-    }
-    fn get_committee_count_at_slot(&self, state: &BeaconState<MinimalConfig>, slot: Slot) -> u64 {
-        let res: u64 = 4;
-        res
-    }
+
     fn get_beacon_committee(
         &self,
         state: &BeaconState<MinimalConfig>,
@@ -110,10 +121,14 @@ impl BeaconNode for BasicBeaconNode {
         res.push(3);
         res
     }
-    fn get_beacon_proposer_index(&self, state: &BeaconState<MinimalConfig>) -> ValidatorIndex {
-        let res: ValidatorIndex = 3;
-        res
+    fn compute_start_slot_at_epoch(&self, epoch: Epoch) -> Slot {
+        epoch * 8
     }
+    
+    fn get_duty(&self, epoch: Epoch) -> Vec<DutyInfo> {
+        (&self).beacon_node_rest_client.get("/validator/duties?validator_pubkeys=0x88c141df77cd9d8d7a71a75c826c41a9c9f03c6ee1b180f3e7852f6a280099ded351b58d66e653af8e42816a4d8f532e&epoch=0").unwrap()
+    }
+
     fn get_block_root(
         &self,
         state: &BeaconState<MinimalConfig>,
