@@ -8,20 +8,20 @@ use hex;
 
 const SLOTS_PER_EPOCH: u64 = 8;
 
-pub struct ValidatorService<C: EthConfig> {
+pub struct Service<C: EthConfig> {
     beacon_node: BasicBeaconNode,
     validators: Vec<(PublicKeyBytes, ValidatorIndex, String)>,
     attestation_producer: AttestationProducer<C>,
 }
 
-impl<C: EthConfig> ValidatorService<C> {
-    pub fn new(eth_config: C, validators_keys: Vec<String>) -> ValidatorService<C> {
+impl<C: EthConfig> Service<C> {
+    pub fn new(eth_config: C, validators_keys: Vec<String>) -> Service<C> {
         let validators = parse_validators(validators_keys).unwrap();
         let attestation_producer = AttestationProducer {
             config: eth_config,
             beacon_node: BasicBeaconNode::new(),
         };
-        ValidatorService {
+        Service {
             beacon_node: BasicBeaconNode::new(),
             validators,
             attestation_producer
@@ -46,11 +46,13 @@ impl<C: EthConfig> ValidatorService<C> {
             loop {
                 println!("Work at slot: {}", current_slot);
                 for duty in duties.iter() {
-                    if duty.attestation_slot == current_slot {
-                        println!("\tvalidator {} should attest block", duty.validator_pubkey);
+                    if duty.attestation_slot == current_slot {                    
                         let attestation_data = match self.get_validator_index(&duty.validator_pubkey) {
-                            Some(validator_index) => self.attestation_producer.get_attestation_data(
-                                &beacon_state, duty.attestation_committee_index, validator_index),
+                            Some(validator_index) => {
+                                println!("\tvalidator {} should attest block", validator_index);
+                                self.attestation_producer.get_attestation_data(
+                                &beacon_state, duty.attestation_committee_index, duty.attestation_committee_position)
+                            },
                             _ => None
                         };
                         let attestation_result = match attestation_data {

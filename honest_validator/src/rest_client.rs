@@ -1,3 +1,4 @@
+// TODO: rewrite rest client with reqwest: https://crates.io/crates/reqwest
 // Hyper Imports
 use hyper::client::Client;
 use hyper::header::HeaderValue;
@@ -52,7 +53,7 @@ impl RestClient {
         println!("Calling POST: {}", uri);
         match self.post_request(uri, body) {
             Some(response) => response,
-            None => { println!("api error.."); Some(TResult::default())}
+            None => Some(TResult::default())
         }
     }
 
@@ -66,12 +67,10 @@ impl RestClient {
             .try_borrow_mut()
             .unwrap();
         let client = &self.http;
-        println!("core ref pass...");
         
         let req_body = match body {
             Some(b) => {
                 let json = serde_json::to_string(&b).unwrap();
-                println!("parsing json pass...");
                 Body::from(json)
             },
             None => Body::empty()
@@ -96,7 +95,6 @@ impl RestClient {
                         if chunks.is_empty() {
                             None
                         } else {
-                            println!("parsing json result pass? ");
                             let result = match serde_json::from_slice(&chunks) {
                                 Ok(res) => res,
                                 Err(e) => { println!("Error in parsing response json: {}", e); Some(TResult::default())}

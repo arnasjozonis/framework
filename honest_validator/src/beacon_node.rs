@@ -2,7 +2,7 @@ use crate::rest_client::RestClient;
 use serde::{Deserialize, Serialize};
 use types::beacon_state::BeaconState;
 use types::config::{MinimalConfig};
-use types::primitives::{CommitteeIndex, Domain, DomainType, Epoch, Slot, H256};
+use types::primitives::{CommitteeIndex, Domain, DomainType, Epoch, Slot, H256, ValidatorIndex};
 use types::types::Attestation;
 use std::rc::Rc;
 use bls::PublicKeyBytes;
@@ -29,6 +29,7 @@ pub struct DutyInfo {
     pub validator_pubkey: String,
     pub attestation_slot: Slot,
     pub attestation_committee_index: CommitteeIndex,
+    pub attestation_committee_position: ValidatorIndex,
     pub block_proposal_slot: Option<Slot>
 }
 
