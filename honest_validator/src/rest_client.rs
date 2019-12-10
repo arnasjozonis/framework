@@ -45,18 +45,21 @@ impl RestClient {
 
     pub fn post<TResult, TBody>(&self, resource_uri: &str, body: Option<TBody>) -> Option<TResult>
     where
-        TResult: DeserializeOwned,
+        TResult: DeserializeOwned + Default,
         TBody: Serialize
     {
         let host = self.base_url.clone();
         let uri: Uri = (host + resource_uri).parse().unwrap();
-        println!("{}", uri);
-        self.post_request(uri, body).unwrap()
+        println!("Calling POST: {}", uri);
+        match self.post_request(uri, body) {
+            Some(response) => response,
+            None => { println!("api error.."); Some(TResult::default())}
+        }
     }
 
     fn post_request<TResult, TBody>(&self, resource_uri: Uri, body: Option<TBody>) -> Option<TResult>
     where
-        TResult: DeserializeOwned,
+        TResult: DeserializeOwned + Default,
         TBody: Serialize
     {
         let mut core_ref = self
@@ -64,11 +67,12 @@ impl RestClient {
             .try_borrow_mut()
             .unwrap();
         let client = &self.http;
-
+        println!("core ref pass...");
         
         let req_body = match body {
             Some(b) => {
                 let json = serde_json::to_string(&b).unwrap();
+                println!("parsing json pass...");
                 Body::from(json)
             },
             None => Body::empty()
@@ -82,22 +86,31 @@ impl RestClient {
             HeaderValue::from_static("application/json"),
         );
 
-        let work = client.request(req).and_then(|res| {
-            res.into_body()
-                .fold(Vec::new(), |mut v, chunk| {
-                    v.extend(&chunk[..]);
-                    ok::<_, hyper::Error>(v)
-                })
-                .map(move |chunks| {
-                    if chunks.is_empty() {
-                        None
-                    } else {
-                        Some(serde_json::from_slice(&chunks).unwrap())
-                    }
-                })
-        });
-        core_ref
-            .run(work).unwrap().unwrap()
+        let work = client.request(req)
+            .and_then(|res| {
+                res.into_body()
+                    .fold(Vec::new(), |mut v, chunk| {
+                        v.extend(&chunk[..]);
+                        ok::<_, hyper::Error>(v)
+                    })
+                    .map(move |chunks| {
+                        if chunks.is_empty() {
+                            None
+                        } else {
+                            println!("parsing json result pass? ");
+                            let result = match serde_json::from_slice(&chunks) {
+                                Ok(res) => res,
+                                Err(e) => { println!("Error in parsing response json: {}", e); Some(TResult::default())}
+                            };
+                            result
+                        }
+                    })
+            });
+
+        match core_ref.run(work) {
+            Ok(future_item) => future_item,
+            Err(e) => { println!("API error: {}", e); None }
+        }
     }
 
     pub fn get<TResult>(&self, resource_uri: &str) -> Option<TResult>

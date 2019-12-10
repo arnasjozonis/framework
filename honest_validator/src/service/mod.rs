@@ -1,5 +1,5 @@
 use crate::attestation_producer::AttestationProducer;
-use crate::beacon_node::{BasicBeaconNode, BeaconNode, DutyInfo};
+use crate::beacon_node::{BasicBeaconNode, BeaconNode, DutyInfo, Error};
 use types::config::Config as EthConfig;
 use types::primitives::{CommitteeIndex, Epoch, ValidatorIndex};
 use std::{thread, time};
@@ -55,9 +55,21 @@ impl<C: EthConfig> ValidatorService<C> {
                                 &beacon_state, duty.attestation_committee_index, validator_index),
                             _ => None
                         };
-                        match attestation_data {
-                            Some(data) => self.beacon_node.publish_attestation(data).unwrap(),
-                            None => println!("Failed to build attestation data, for validator: {}", duty.validator_pubkey)
+                        let attestation_result = match attestation_data {
+                            Some(data) => self.beacon_node.publish_attestation(data),
+                            None => {
+                                println!("Failed to build attestation data, for validator: {}", duty.validator_pubkey);
+                                Err(Error::AttestionPublishingError)
+                            }
+                        };
+                        match attestation_result {
+                            Err(e) => {
+                                match e {
+                                    Error::AttestionPublishingError => println!("Attestation publishing error in API"),
+                                    _ => println!("Unknown error in API")
+                                }
+                            },
+                            _ => ()
                         }
                         
                     }
@@ -77,38 +89,6 @@ impl<C: EthConfig> ValidatorService<C> {
                     break;
                 }
             }
-            // let duty_info = duties.first().unwrap();
-            // println!("Duty fetched, will be working on slot: {}", duty_info.attestation_slot);
-            // let job = self.calculate_job(duty_info);
-            
-            // match job {
-            //     WorkInfo::Attest => {
-            //         println!("Attesting...");
-
-            
-
-            //         let commitee_index: CommitteeIndex = 1;
-            //         let attestation_data = attestation_producer.construct_attestation_data(
-            //             beacon_state,
-            //             beacon_state.slot,
-            //             commitee_index,
-            //         );
-
-            //         let attestation = attestation_producer.construct_attestation(
-            //             beacon_state,
-            //             attestation_data,
-            //             beacon_state.slot,
-            //             commitee_index,
-            //             0, //TODO: use real index
-            //         );
-
-            //         println!("Attestation result: {}", attestation.is_some());
-
-            //         //self.beacon_node.publish_attestation(attestation);
-            //     }
-            //     WorkInfo::SignBlock => println!("Producing..."),
-            //     WorkInfo::None => println!("No work."),
-            // }
             
             counter = counter + 1;
             if counter > 65 {
@@ -123,9 +103,9 @@ impl<C: EthConfig> ValidatorService<C> {
     }
 
     fn get_validator_index(&self, pubkey: &String) -> Option<ValidatorIndex> {
-        for validator in &self.validators {
-            if validator.2 == *pubkey {
-                return Some(validator.1);
+        for (_, index, validator) in &self.validators {
+            if *validator == *pubkey {
+                return Some(index.clone());
             }
         }
         None
