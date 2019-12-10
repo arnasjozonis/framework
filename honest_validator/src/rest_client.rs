@@ -10,7 +10,7 @@ use futures::stream::Stream;
 use tokio_core::reactor::Core;
 
 use serde::de::DeserializeOwned;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -43,19 +43,21 @@ impl RestClient {
         })
     }
 
-    pub fn post<TResult>(&self, resource_uri: &str) -> Option<TResult>
+    pub fn post<TResult, TBody>(&self, resource_uri: &str, body: Option<TBody>) -> Option<TResult>
     where
         TResult: DeserializeOwned,
+        TBody: Serialize
     {
         let host = self.base_url.clone();
         let uri: Uri = (host + resource_uri).parse().unwrap();
         println!("{}", uri);
-        self.post_request(uri).unwrap()
+        self.post_request(uri, body).unwrap()
     }
 
-    fn post_request<TResult>(&self, uri: Uri) -> Option<TResult>
+    fn post_request<TResult, TBody>(&self, resource_uri: Uri, body: Option<TBody>) -> Option<TResult>
     where
         TResult: DeserializeOwned,
+        TBody: Serialize
     {
         let mut core_ref = self
             .core
@@ -63,11 +65,18 @@ impl RestClient {
             .unwrap();
         let client = &self.http;
 
-        let json = r#"{"library":"hyper"}"#;
+        
+        let req_body = match body {
+            Some(b) => {
+                let json = serde_json::to_string(&b).unwrap();
+                Body::from(json)
+            },
+            None => Body::empty()
+        };
 
-        let mut req = Request::new(Body::from(json));
+        let mut req = Request::new(req_body);
         *req.method_mut() = Method::POST;
-        *req.uri_mut() = uri.clone();
+        *req.uri_mut() = resource_uri.clone();
         req.headers_mut().insert(
             hyper::header::CONTENT_TYPE,
             HeaderValue::from_static("application/json"),
