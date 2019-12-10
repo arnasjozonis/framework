@@ -1,7 +1,7 @@
 use crate::attestation_producer::AttestationProducer;
-use crate::beacon_node::{BasicBeaconNode, BeaconNode, DutyInfo, Error};
+use crate::beacon_node::{BasicBeaconNode, BeaconNode, Error};
 use types::config::Config as EthConfig;
-use types::primitives::{CommitteeIndex, Epoch, ValidatorIndex};
+use types::primitives::{Epoch, ValidatorIndex};
 use std::{thread, time};
 use bls::PublicKeyBytes;
 use hex;
@@ -9,7 +9,6 @@ use hex;
 const SLOTS_PER_EPOCH: u64 = 8;
 
 pub struct ValidatorService<C: EthConfig> {
-    eth_config: C,
     beacon_node: BasicBeaconNode,
     validators: Vec<(PublicKeyBytes, ValidatorIndex, String)>,
     attestation_producer: AttestationProducer<C>,
@@ -23,7 +22,6 @@ impl<C: EthConfig> ValidatorService<C> {
             beacon_node: BasicBeaconNode::new(),
         };
         ValidatorService {
-            eth_config,
             beacon_node: BasicBeaconNode::new(),
             validators,
             attestation_producer

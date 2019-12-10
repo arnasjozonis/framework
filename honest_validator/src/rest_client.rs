@@ -1,7 +1,6 @@
 // Hyper Imports
 use hyper::client::Client;
 use hyper::header::HeaderValue;
-use hyper::StatusCode;
 use hyper::{self, Body, Method, Request, Uri};
 type HttpConnector = hyper::client::HttpConnector;
 
@@ -10,7 +9,7 @@ use futures::stream::Stream;
 use tokio_core::reactor::Core;
 
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 
 use std::cell::RefCell;
 use std::rc::Rc;

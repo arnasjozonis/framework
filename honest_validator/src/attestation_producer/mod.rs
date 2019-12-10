@@ -8,6 +8,8 @@ use types::config::*;
 use types::primitives::{CommitteeIndex, Slot, ValidatorIndex};
 use types::types::{Attestation, AttestationData, Checkpoint};
 
+const MAX_VALIDATORS_PER_COMMITTEE: usize = 4;
+
 pub struct AttestationProducer<C: Config> {
     pub config: C,
     pub beacon_node: BasicBeaconNode,
@@ -70,12 +72,7 @@ impl<C: Config> AttestationProducer<C> {
         committee_index: CommitteeIndex,
         validator_index: ValidatorIndex,
     ) -> Option<Attestation<MinimalConfig>> {
-        let committee_len = self
-            .beacon_node
-            .get_beacon_committee(head_state, assigned_slot, committee_index)
-            .len();
-
-        let mut aggregation_bits = BitList::with_capacity(committee_len).ok()?;
+        let mut aggregation_bits = BitList::with_capacity(MAX_VALIDATORS_PER_COMMITTEE).ok()?;
         aggregation_bits
             .set(validator_index.try_into().unwrap(), true)
             .ok()?;
