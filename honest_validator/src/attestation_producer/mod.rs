@@ -15,7 +15,7 @@ pub struct AttestationProducer<C: Config> {
 
 impl<C: Config> AttestationProducer<C> {
     pub fn construct_attestation_data(
-        &mut self,
+        &self,
         head_state: &BeaconState<MinimalConfig>,
         assigned_slot: Slot,
         committee_index: CommitteeIndex,
@@ -49,7 +49,7 @@ impl<C: Config> AttestationProducer<C> {
     }
 
     fn get_signed_attestation_data(
-        &mut self,
+        &self,
         state: &BeaconState<MinimalConfig>,
         attestation_data: &AttestationData,
         privkey: &SecretKey,
@@ -63,13 +63,13 @@ impl<C: Config> AttestationProducer<C> {
     }
 
     pub fn construct_attestation(
-        &mut self,
+        &self,
         head_state: &BeaconState<MinimalConfig>,
         attestation_data: AttestationData,
         assigned_slot: Slot,
         committee_index: CommitteeIndex,
         validator_index: ValidatorIndex,
-    ) -> Option<Attestation<C>> {
+    ) -> Option<Attestation<MinimalConfig>> {
         let committee_len = self
             .beacon_node
             .get_beacon_committee(head_state, assigned_slot, committee_index)
@@ -89,5 +89,28 @@ impl<C: Config> AttestationProducer<C> {
             data: attestation_data.clone(),
             signature: signed_attestation_data,
         })
+    }
+
+    pub fn get_attestation_data(
+        &self,
+        beacon_state: &BeaconState<MinimalConfig>,
+        commitee_index: CommitteeIndex,
+        validator_index: ValidatorIndex) -> Option<Attestation<MinimalConfig>> {
+
+        println!("Attesting...");
+
+        let attestation_data = self.construct_attestation_data(
+            &beacon_state,
+            beacon_state.slot,
+            commitee_index,
+        );
+
+        self.construct_attestation(
+            &beacon_state,
+            attestation_data,
+            beacon_state.slot,
+            commitee_index,
+            validator_index
+        )
     }
 }

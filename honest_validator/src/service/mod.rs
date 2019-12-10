@@ -4,78 +4,114 @@ use types::config::Config as EthConfig;
 use types::primitives::{CommitteeIndex, Epoch, ValidatorIndex};
 use std::{thread, time};
 use bls::PublicKeyBytes;
+use hex;
 
-pub enum WorkInfo {
-    SignBlock,
-    Attest,
-    None,
-}
+const SLOTS_PER_EPOCH: u64 = 8;
 
 pub struct ValidatorService<C: EthConfig> {
     eth_config: C,
     beacon_node: BasicBeaconNode,
-    validator: (PublicKeyBytes, ValidatorIndex),
+    validators: Vec<(PublicKeyBytes, ValidatorIndex, String)>,
+    attestation_producer: AttestationProducer<C>,
 }
 
 impl<C: EthConfig> ValidatorService<C> {
-    pub fn new(eth_config: C, validator: (PublicKeyBytes, ValidatorIndex)) -> ValidatorService<C> {
+    pub fn new(eth_config: C, validators_keys: Vec<String>) -> ValidatorService<C> {
+        let validators = parse_validators(validators_keys).unwrap();
+        let attestation_producer = AttestationProducer {
+            config: eth_config,
+            beacon_node: BasicBeaconNode::new(),
+        };
         ValidatorService {
             eth_config,
             beacon_node: BasicBeaconNode::new(),
-            validator
+            validators,
+            attestation_producer
         }
     }
 
     pub fn start(&self) {
         let mut counter = 0u128;
+
         loop {
             println!("Fetching current beacon state...");
             let beacon_state = self.beacon_node.get_state();
-            println!(
-                "State fetched: slot: {}, epoch: {}, genesis_time: {}",
-                beacon_state.slot, beacon_state.fork.epoch, beacon_state.genesis_time
-            );
-            let epoch: Epoch = 0;
-            let duties = self.beacon_node.get_duty(epoch);
-            let duty_info = duties.first().unwrap();
-            println!("Duty fetched, will be working on slot: {}", duty_info.attestation_slot);
-            let job = self.calculate_job(duty_info);
-            
-            match job {
-                WorkInfo::Attest => {
-                    println!("Attesting...");
+            let epoch: Epoch = beacon_state.fork.epoch;
+            let mut validator_pubkeys = Vec::new();
 
-                    let mut attestation_producer = AttestationProducer {
-                        config: self.eth_config,
-                        beacon_node: self.beacon_node.clone(),
-                    };
-
-                    let commitee_index: CommitteeIndex = 1;
-                    let attestation_data = attestation_producer.construct_attestation_data(
-                        beacon_state,
-                        beacon_state.slot,
-                        commitee_index,
-                    );
-
-                    let attestation = attestation_producer.construct_attestation(
-                        beacon_state,
-                        attestation_data,
-                        beacon_state.slot,
-                        commitee_index,
-                        self.validator.1,
-                    );
-
-                    println!("Attestation result: {}", attestation.is_some());
-
-                    //self.beacon_node.publish_attestation(attestation);
-                }
-                WorkInfo::SignBlock => println!("Producing..."),
-                WorkInfo::None => println!("No work."),
+            for validator in &self.validators {
+                validator_pubkeys.push(validator.0.clone());
             }
-            let ten_millis = time::Duration::from_millis(6500);
-            thread::sleep(ten_millis);
+
+            let duties = self.beacon_node.get_duties(validator_pubkeys, epoch);
+            let mut current_slot = beacon_state.slot % SLOTS_PER_EPOCH;
+            loop {
+                println!("Work at slot: {}", current_slot);
+                for duty in duties.iter() {
+                    if duty.attestation_slot == current_slot {
+                        println!("\tvalidator {} should attest block", duty.validator_pubkey);
+                        let attestation_data = match self.get_validator_index(&duty.validator_pubkey) {
+                            Some(validator_index) => self.attestation_producer.get_attestation_data(
+                                &beacon_state, duty.attestation_committee_index, validator_index),
+                            _ => None
+                        };
+                        match attestation_data {
+                            Some(data) => self.beacon_node.publish_attestation(data).unwrap(),
+                            None => println!("Failed to build attestation data, for validator: {}", duty.validator_pubkey)
+                        }
+                        
+                    }
+                    match duty.block_proposal_slot {
+                        Some(slot) => {
+                            if slot == current_slot {
+                                println!("\t\tvalidator {} should propose block", duty.validator_pubkey);
+                            }
+                        },
+                        _ => ()
+                    };
+                }
+                let slot_duration = time::Duration::from_millis(12000);
+                thread::sleep(slot_duration);
+                current_slot = current_slot + 1;
+                if current_slot > SLOTS_PER_EPOCH {
+                    break;
+                }
+            }
+            // let duty_info = duties.first().unwrap();
+            // println!("Duty fetched, will be working on slot: {}", duty_info.attestation_slot);
+            // let job = self.calculate_job(duty_info);
+            
+            // match job {
+            //     WorkInfo::Attest => {
+            //         println!("Attesting...");
+
+            
+
+            //         let commitee_index: CommitteeIndex = 1;
+            //         let attestation_data = attestation_producer.construct_attestation_data(
+            //             beacon_state,
+            //             beacon_state.slot,
+            //             commitee_index,
+            //         );
+
+            //         let attestation = attestation_producer.construct_attestation(
+            //             beacon_state,
+            //             attestation_data,
+            //             beacon_state.slot,
+            //             commitee_index,
+            //             0, //TODO: use real index
+            //         );
+
+            //         println!("Attestation result: {}", attestation.is_some());
+
+            //         //self.beacon_node.publish_attestation(attestation);
+            //     }
+            //     WorkInfo::SignBlock => println!("Producing..."),
+            //     WorkInfo::None => println!("No work."),
+            // }
+            
             counter = counter + 1;
-            if counter > 10 {
+            if counter > 65 {
                 break;
             }
         }
@@ -86,30 +122,27 @@ impl<C: EthConfig> ValidatorService<C> {
         println!("End service work.");
     }
 
-    fn calculate_job(&self, duty_info: &DutyInfo) -> WorkInfo {
-        //TODO: calculate assignment
-
-        // let next_epoch = beacon_state.fork.epoch + 1;
-        // if next_epoch < epoch {
-        //     return Err(String::from(
-        //         "Epoch to request duties is too far in the future",
-        //     ));
-        // };
-
-        // let start_slot: Slot = beacon_node.compute_start_slot_at_epoch(epoch);
-        // let end_slot = <MinimalConfig as Config>::SlotsPerEpoch::to_u64() + &start_slot;
-        // for slot in start_slot..end_slot {
-        //     let committee_count = beacon_node.get_committee_count_at_slot(beacon_state, slot);
-        //     for index in 0..committee_count {
-        //         let committee = beacon_node.get_beacon_committee(beacon_state, slot, index);
-        //         let assignment = committee.iter().find(|&&idx| idx == validator_index);
-        //         return match assignment {
-        //             Some(val) => Ok(WorkInfo::Attest),
-        //             None => Ok(WorkInfo::None),
-        //         };
-        //     }
-        // }
-        WorkInfo::None
+    fn get_validator_index(&self, pubkey: &String) -> Option<ValidatorIndex> {
+        for validator in &self.validators {
+            if validator.2 == *pubkey {
+                return Some(validator.1);
+            }
+        }
+        None
     }
+}
 
+fn parse_validators(pubkeys: Vec<String>) -> Result<Vec<(PublicKeyBytes, ValidatorIndex, String)>, String> {
+    const PREFIX: &str = "0x";
+    let mut result = Vec::new();
+    for index in 0..pubkeys.len()  {
+        if pubkeys[index].starts_with(PREFIX) {
+            let pubkey_bytes = hex::decode(pubkeys[index].trim_start_matches(PREFIX)).unwrap();
+            let pubkey = PublicKeyBytes::from_bytes(pubkey_bytes.as_slice()).unwrap();
+            result.push((pubkey, index as u64, pubkeys[index].to_owned()));
+        } else {
+            return Err(String::from( "Public key must have a 0x prefix"))
+        }
+    }
+    Ok(result)
 }
