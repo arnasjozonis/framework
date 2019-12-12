@@ -76,7 +76,13 @@ impl<C: EthConfig> Service<C> {
                     match duty.block_proposal_slot {
                         Some(slot) => {
                             if slot == current_slot {
+                                println!("\n\n");
                                 println!("\t\tvalidator {} should propose block", duty.validator_pubkey);
+                                match (&self).beacon_node.get_block(slot, String::from("tetatata")) {
+                                    Some(_) =>  println!("block received"),
+                                    None =>  println!("block not received"),
+                                };
+                                println!("\n\n");
                             }
                         },
                         _ => ()

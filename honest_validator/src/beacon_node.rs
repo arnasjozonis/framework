@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use types::beacon_state::BeaconState;
 use types::config::{MinimalConfig};
 use types::primitives::{CommitteeIndex, Domain, DomainType, Epoch, Slot, H256, ValidatorIndex};
-use types::types::Attestation;
+use types::types::{Attestation,BeaconBlock};
 use std::rc::Rc;
 use bls::PublicKeyBytes;
 
@@ -75,6 +75,8 @@ pub trait BeaconNode {
         domain_type: DomainType,
         message_epoch: Option<Epoch>,
     ) -> Domain;
+
+    fn get_block(&self, slot: Slot, randao_reveal: String)->Option<BeaconBlock<MinimalConfig>>;
 }
 
 #[derive(Clone)]
@@ -107,6 +109,11 @@ impl BeaconNode for BasicBeaconNode {
         &self.last_known_state
     }
 
+    fn get_block(&self, slot: Slot, randao_reveal: String) -> Option<BeaconBlock<MinimalConfig>> {
+        let url = format!("/validator/block?slot={}&randao_reveal={}", slot, randao_reveal);
+        (&self).beacon_node_rest_client.get(&url[..])
+    }
+
     fn get_current_epoch(&self, state: &BeaconState<MinimalConfig>) -> Epoch {
         state.slot / 8
     }
@@ -129,6 +136,7 @@ impl BeaconNode for BasicBeaconNode {
             _ => Err(Error::AttestionPublishingError)
         }
     }
+
 
     fn get_block_root(
         &self,

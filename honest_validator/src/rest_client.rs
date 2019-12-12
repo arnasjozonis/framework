@@ -117,7 +117,7 @@ impl RestClient {
         let host = self.base_url.clone();
         let uri: Uri = (host + resource_uri).parse().unwrap();
         println!("{}", uri);
-        self.get_request(uri).unwrap()
+        self.get_request(uri)
     }
 
     fn get_request<TResult>(&self, uri: Uri) -> Option<TResult>
@@ -129,21 +129,37 @@ impl RestClient {
             .try_borrow_mut()
             .unwrap();
         let client = &self.http;
-        let work = client.get(uri).and_then(|res| {
-            res.into_body()
-                .fold(Vec::new(), |mut v, chunk| {
-                    v.extend(&chunk[..]);
-                    ok::<_, hyper::Error>(v)
-                })
-                .map(move |chunks| {
-                    if chunks.is_empty() {
-                        None
-                    } else {
-                        Some(serde_json::from_slice(&chunks).unwrap())
-                    }
-                })
-        });
-        core_ref
-            .run(work).unwrap().unwrap()
+        let mut req = Request::new(Body::empty());
+
+        *req.method_mut() = Method::GET;
+        *req.uri_mut() = uri.clone();
+        req.headers_mut().insert(
+            hyper::header::CONTENT_TYPE,
+            HeaderValue::from_static("application/json"),
+        );
+        let work = client.request(req)
+            .and_then(|res| {
+                res.into_body()
+                    .fold(Vec::new(), |mut v, chunk| {
+                        v.extend(&chunk[..]);
+                        ok::<_, hyper::Error>(v)
+                    })
+                    .map(move |chunks| {
+                        if chunks.is_empty() {
+                            None
+                        } else {
+                            let result = match serde_json::from_slice(&chunks) {
+                                Ok(res) => res,
+                                Err(e) => { println!("Error in parsing response json: {}", e); None}
+                            };
+                            result
+                        }
+                    })
+            });
+
+        match core_ref.run(work) {
+            Ok(future_item) => future_item,
+            Err(e) => { println!("API error: {}", e); None }
+        }
     }
 }
