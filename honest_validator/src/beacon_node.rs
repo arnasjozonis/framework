@@ -1,14 +1,14 @@
 use crate::rest_client::RestClient;
 use serde::{Deserialize, Serialize};
 use types::beacon_state::BeaconState;
-use types::config::{Config, MinimalConfig};
-use types::primitives::{CommitteeIndex, Domain, DomainType, Epoch, Slot, ValidatorIndex, H256};
-use types::types::Attestation;
+use types::config::{MinimalConfig};
+use types::primitives::{CommitteeIndex, Domain, DomainType, Epoch, Slot, H256, ValidatorIndex};
+use types::types::{Attestation,BeaconBlock};
 use std::rc::Rc;
 use bls::PublicKeyBytes;
 
-
-const EMPTY_BODY: Option<bool> = Option::None;
+const SLOTS_PER_HISTORICAL_ROOT: Slot = 8192;
+const SLOTS_PER_EPOCH: u64 = 8;
 
 #[derive(PartialEq, Debug)]
 pub enum Error {
@@ -29,6 +29,7 @@ pub struct DutyInfo {
     pub validator_pubkey: String,
     pub attestation_slot: Slot,
     pub attestation_committee_index: CommitteeIndex,
+    pub attestation_committee_position: ValidatorIndex,
     pub block_proposal_slot: Option<Slot>
 }
 
@@ -44,22 +45,12 @@ pub trait BeaconNode {
     fn get_current_epoch(&self, state: &BeaconState<MinimalConfig>) -> Epoch;
 
     fn compute_start_slot_at_epoch(&self, epoch: Epoch) -> Slot;
-    fn get_beacon_committee(
-        &self,
-        state: &BeaconState<MinimalConfig>,
-        slot: Slot,
-        index: CommitteeIndex,
-    ) -> Vec<ValidatorIndex>;
+    
     fn get_block_root(
         &self,
         state: &BeaconState<MinimalConfig>,
         epoch: Epoch,
     ) -> Result<H256, Error>;
-
-    fn get_duty(
-        &self,
-        epoch: Epoch,
-    ) -> Vec<DutyInfo>;
 
     fn get_duties(
         &self,
@@ -84,6 +75,8 @@ pub trait BeaconNode {
         domain_type: DomainType,
         message_epoch: Option<Epoch>,
     ) -> Domain;
+
+    fn get_block(&self, slot: Slot, randao_reveal: String)->Option<BeaconBlock<MinimalConfig>>;
 }
 
 #[derive(Clone)]
@@ -116,29 +109,17 @@ impl BeaconNode for BasicBeaconNode {
         &self.last_known_state
     }
 
+    fn get_block(&self, slot: Slot, randao_reveal: String) -> Option<BeaconBlock<MinimalConfig>> {
+        let url = format!("/validator/block?slot={}&randao_reveal={}", slot, randao_reveal);
+        (&self).beacon_node_rest_client.get(&url[..])
+    }
+
     fn get_current_epoch(&self, state: &BeaconState<MinimalConfig>) -> Epoch {
         state.slot / 8
     }
 
-    fn get_beacon_committee(
-        &self,
-        state: &BeaconState<MinimalConfig>,
-        slot: Slot,
-        index: CommitteeIndex,
-    ) -> Vec<ValidatorIndex> {
-        let mut res: Vec<ValidatorIndex> = Vec::new();
-        res.push(0);
-        res.push(1);
-        res.push(2);
-        res.push(3);
-        res
-    }
     fn compute_start_slot_at_epoch(&self, epoch: Epoch) -> Slot {
         epoch * 8
-    }
-    
-    fn get_duty(&self, epoch: Epoch) -> Vec<DutyInfo> {
-        (&self).beacon_node_rest_client.get("/validator/duties?validator_pubkeys=0x88c141df77cd9d8d7a71a75c826c41a9c9f03c6ee1b180f3e7852f6a280099ded351b58d66e653af8e42816a4d8f532e&epoch=0").unwrap()
     }
 
     fn get_duties(&self, validators: Vec<PublicKeyBytes>, epoch: Epoch) -> Vec<DutyInfo> {
@@ -156,26 +137,50 @@ impl BeaconNode for BasicBeaconNode {
         }
     }
 
+
     fn get_block_root(
         &self,
         state: &BeaconState<MinimalConfig>,
         epoch: Epoch,
     ) -> Result<H256, Error> {
-        Ok(H256::from([0; 32]))
+        let slot: Slot = epoch * SLOTS_PER_EPOCH;
+        self.get_block_root_at_slot(state, slot)
     }
+
     fn get_block_root_at_slot(
         &self,
         state: &BeaconState<MinimalConfig>,
         slot: Slot,
     ) -> Result<H256, Error> {
-        Ok(H256::from([0; 32]))
+        if slot < state.slot && state.slot <= slot + SLOTS_PER_HISTORICAL_ROOT {
+            let root_idx = (slot % SLOTS_PER_HISTORICAL_ROOT) as usize;
+            return Ok(state.historical_roots[root_idx]);
+        }
+        Err(Error::SlotOutOfRange)
     }
+
     fn get_domain(
         &self,
         state: &BeaconState<MinimalConfig>,
         domain_type: DomainType,
         message_epoch: Option<Epoch>,
     ) -> Domain {
-        0
+
+        let epoch = match message_epoch {
+            Some(epoch) => epoch,
+            None => state.fork.epoch
+        };
+
+        let mut result = (domain_type as u64) << 8;
+
+        let version = if epoch < state.fork.epoch {
+            state.fork.previous_version.clone()
+        } else {
+            state.fork.current_version.clone()
+        };
+        for byte in version {
+            result = (result | (byte as u64) ) << 2; 
+        }
+        result
     }
 }

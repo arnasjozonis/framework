@@ -4,4 +4,4 @@ mod macros;
 pub mod attestation_producer;
 pub mod beacon_node;
 pub mod rest_client;
-pub mod service;
+pub mod validator_service;

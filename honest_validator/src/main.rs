@@ -1,7 +1,7 @@
 extern crate framework_honest_validator as hv;
 
 use clap::{App, Arg};
-use hv::service::ValidatorService;
+use hv::validator_service::Service;
 use types::config::MinimalConfig;
 use std::fs::File;
 use std::io::{BufReader};
@@ -45,6 +45,6 @@ fn main() {
         let validator_key = line.unwrap();
         validators.push(validator_key);
     };
-    let service: ValidatorService<MinimalConfig> = ValidatorService::new(cfg, validators);
+    let service: Service<MinimalConfig> = Service::new(cfg, validators);
     service.start();
 }

@@ -8,6 +8,8 @@ use types::config::*;
 use types::primitives::{CommitteeIndex, Slot, ValidatorIndex};
 use types::types::{Attestation, AttestationData, Checkpoint};
 
+const MAX_VALIDATORS_PER_COMMITTEE: usize = 4;
+
 pub struct AttestationProducer<C: Config> {
     pub config: C,
     pub beacon_node: BasicBeaconNode,
@@ -23,10 +25,8 @@ impl<C: Config> AttestationProducer<C> {
         let epoch = self.beacon_node.get_current_epoch(head_state);
 
         let start_slot = self.beacon_node.compute_start_slot_at_epoch(epoch);
-        let epoch_boundary_block_root = if start_slot == head_state.slot {
-            self.beacon_node
-                .get_block_root(head_state, head_state.slot)
-                .unwrap()
+        let beacon_block_root = if start_slot == head_state.slot {
+            head_state.latest_block_header.body_root
         } else {
             self.beacon_node
                 .get_block_root_at_slot(head_state, start_slot)
@@ -34,13 +34,13 @@ impl<C: Config> AttestationProducer<C> {
         };
         let target = Checkpoint {
             epoch: epoch,
-            root: epoch_boundary_block_root,
+            root: beacon_block_root,
         };
 
         let attestation_data = AttestationData {
             index: committee_index,
             slot: assigned_slot,
-            beacon_block_root: self.beacon_node.get_block_root(head_state, epoch).unwrap(),
+            beacon_block_root,
             source: head_state.current_justified_checkpoint.clone(),
             target,
         };
@@ -66,19 +66,11 @@ impl<C: Config> AttestationProducer<C> {
         &self,
         head_state: &BeaconState<MinimalConfig>,
         attestation_data: AttestationData,
-        assigned_slot: Slot,
-        committee_index: CommitteeIndex,
-        validator_index: ValidatorIndex,
+        validator_committee_index: ValidatorIndex,
     ) -> Option<Attestation<MinimalConfig>> {
-        let committee_len = self
-            .beacon_node
-            .get_beacon_committee(head_state, assigned_slot, committee_index)
-            .len();
-
-        let mut aggregation_bits = BitList::with_capacity(committee_len).ok()?;
+        let mut aggregation_bits = BitList::with_capacity(MAX_VALIDATORS_PER_COMMITTEE).ok().unwrap();
         aggregation_bits
-            .set(validator_index.try_into().unwrap(), true)
-            .ok()?;
+            .set(validator_committee_index.try_into().unwrap(), true).unwrap();
 
         let privkey = SecretKey::random();
         let signed_attestation_data =
@@ -95,9 +87,9 @@ impl<C: Config> AttestationProducer<C> {
         &self,
         beacon_state: &BeaconState<MinimalConfig>,
         commitee_index: CommitteeIndex,
-        validator_index: ValidatorIndex) -> Option<Attestation<MinimalConfig>> {
+        validator_commitee_index: ValidatorIndex) -> Option<Attestation<MinimalConfig>> {
 
-        println!("Attesting...");
+        println!("Validator at committe {} (position {}) starts attestation", commitee_index, validator_commitee_index);
 
         let attestation_data = self.construct_attestation_data(
             &beacon_state,
@@ -108,9 +100,7 @@ impl<C: Config> AttestationProducer<C> {
         self.construct_attestation(
             &beacon_state,
             attestation_data,
-            beacon_state.slot,
-            commitee_index,
-            validator_index
+            validator_commitee_index
         )
     }
 }
