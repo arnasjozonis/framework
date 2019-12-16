@@ -16,7 +16,7 @@ pub struct AttestationProducer<C: Config> {
 }
 
 impl<C: Config> AttestationProducer<C> {
-    pub fn construct_attestation_data(
+    fn construct_attestation_data(
         &self,
         head_state: &BeaconState<MinimalConfig>,
         assigned_slot: Slot,
@@ -25,22 +25,26 @@ impl<C: Config> AttestationProducer<C> {
         let epoch = self.beacon_node.get_current_epoch(head_state);
 
         let start_slot = self.beacon_node.compute_start_slot_at_epoch(epoch);
-        let beacon_block_root = if start_slot == head_state.slot {
-            head_state.latest_block_header.body_root
+
+        let head_block_root = head_state.latest_block_header.state_root;
+
+        let epoch_boundary_block_root = if start_slot == head_state.slot {
+            head_block_root
         } else {
             self.beacon_node
                 .get_block_root_at_slot(head_state, start_slot)
                 .unwrap()
         };
+
         let target = Checkpoint {
             epoch: epoch,
-            root: beacon_block_root,
+            root: epoch_boundary_block_root,
         };
 
         let attestation_data = AttestationData {
             index: committee_index,
             slot: assigned_slot,
-            beacon_block_root,
+            beacon_block_root: head_block_root,
             source: head_state.current_justified_checkpoint.clone(),
             target,
         };
@@ -62,19 +66,22 @@ impl<C: Config> AttestationProducer<C> {
         Signature::new(&attestation_data.tree_hash_root()[..], domain, privkey)
     }
 
-    pub fn construct_attestation(
+    fn construct_attestation(
         &self,
         head_state: &BeaconState<MinimalConfig>,
         attestation_data: AttestationData,
         validator_committee_index: ValidatorIndex,
+        privkey: &SecretKey,
     ) -> Option<Attestation<MinimalConfig>> {
-        let mut aggregation_bits = BitList::with_capacity(MAX_VALIDATORS_PER_COMMITTEE).ok().unwrap();
+        let mut aggregation_bits = BitList::with_capacity(MAX_VALIDATORS_PER_COMMITTEE)
+            .ok()
+            .unwrap();
         aggregation_bits
-            .set(validator_committee_index.try_into().unwrap(), true).unwrap();
+            .set(validator_committee_index.try_into().unwrap(), true)
+            .unwrap();
 
-        let privkey = SecretKey::random();
         let signed_attestation_data =
-            self.get_signed_attestation_data(head_state, &attestation_data, &privkey);
+            self.get_signed_attestation_data(head_state, &attestation_data, privkey);
 
         Some(Attestation {
             aggregation_bits,
@@ -83,24 +90,26 @@ impl<C: Config> AttestationProducer<C> {
         })
     }
 
-    pub fn get_attestation_data(
+    pub fn get_attestation(
         &self,
         beacon_state: &BeaconState<MinimalConfig>,
         commitee_index: CommitteeIndex,
-        validator_commitee_index: ValidatorIndex) -> Option<Attestation<MinimalConfig>> {
-
-        println!("Validator at committe {} (position {}) starts attestation", commitee_index, validator_commitee_index);
-
-        let attestation_data = self.construct_attestation_data(
-            &beacon_state,
-            beacon_state.slot,
-            commitee_index,
+        validator_commitee_index: ValidatorIndex,
+        privkey: &SecretKey,
+    ) -> Option<Attestation<MinimalConfig>> {
+        println!(
+            "Validator at committe {} (position {}) starts attestation",
+            commitee_index, validator_commitee_index
         );
+
+        let attestation_data =
+            self.construct_attestation_data(&beacon_state, beacon_state.slot, commitee_index);
 
         self.construct_attestation(
             &beacon_state,
             attestation_data,
-            validator_commitee_index
+            validator_commitee_index,
+            privkey,
         )
     }
 }

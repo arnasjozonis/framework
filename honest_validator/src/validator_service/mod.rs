@@ -1,10 +1,10 @@
 use crate::attestation_producer::AttestationProducer;
 use crate::beacon_node::{BasicBeaconNode, BeaconNode, Error};
+use bls::{PublicKeyBytes, SecretKey};
+use hex;
+use std::{thread, time};
 use types::config::Config as EthConfig;
 use types::primitives::{Epoch, ValidatorIndex};
-use std::{thread, time};
-use bls::PublicKeyBytes;
-use hex;
 
 const SLOTS_PER_EPOCH: u64 = 8;
 
@@ -24,7 +24,7 @@ impl<C: EthConfig> Service<C> {
         Service {
             beacon_node: BasicBeaconNode::new(),
             validators,
-            attestation_producer
+            attestation_producer,
         }
     }
 
@@ -46,46 +46,61 @@ impl<C: EthConfig> Service<C> {
             loop {
                 println!("Work at slot: {}", current_slot);
                 for duty in duties.iter() {
-                    if duty.attestation_slot == current_slot {                    
-                        let attestation_data = match self.get_validator_index(&duty.validator_pubkey) {
+                    if duty.attestation_slot == current_slot {
+                        let attestation = match self.get_validator_index(&duty.validator_pubkey) {
                             Some(validator_index) => {
                                 println!("\tvalidator {} should attest block", validator_index);
-                                self.attestation_producer.get_attestation_data(
-                                &beacon_state, duty.attestation_committee_index, duty.attestation_committee_position)
-                            },
-                            _ => None
+
+                                let privkey = SecretKey::random();
+                                self.attestation_producer.get_attestation(
+                                    &beacon_state,
+                                    duty.attestation_committee_index,
+                                    duty.attestation_committee_position,
+                                    &privkey,
+                                )
+                            }
+                            _ => None,
                         };
-                        let attestation_result = match attestation_data {
+
+                        let attestation_result = match attestation {
                             Some(data) => self.beacon_node.publish_attestation(data),
                             None => {
-                                println!("Failed to build attestation data, for validator: {}", duty.validator_pubkey);
+                                println!(
+                                    "Failed to build attestation data, for validator: {}",
+                                    duty.validator_pubkey
+                                );
                                 Err(Error::AttestionPublishingError)
                             }
                         };
                         match attestation_result {
-                            Err(e) => {
-                                match e {
-                                    Error::AttestionPublishingError => println!("Attestation publishing error in API"),
-                                    _ => println!("Unknown error in API")
+                            Err(e) => match e {
+                                Error::AttestionPublishingError => {
+                                    println!("Attestation publishing error in API")
                                 }
+                                _ => println!("Unknown error in API"),
                             },
-                            _ => ()
+                            _ => (),
                         }
-                        
                     }
                     match duty.block_proposal_slot {
                         Some(slot) => {
                             if slot == current_slot {
                                 println!("\n\n");
-                                println!("\t\tvalidator {} should propose block", duty.validator_pubkey);
-                                match (&self).beacon_node.get_block(slot, String::from("tetatata")) {
-                                    Some(_) =>  println!("block received"),
-                                    None =>  println!("block not received"),
+                                println!(
+                                    "\t\tvalidator {} should propose block",
+                                    duty.validator_pubkey
+                                );
+                                match (&self)
+                                    .beacon_node
+                                    .get_block(slot, String::from("tetatata"))
+                                {
+                                    Some(_) => println!("block received"),
+                                    None => println!("block not received"),
                                 };
                                 println!("\n\n");
                             }
-                        },
-                        _ => ()
+                        }
+                        _ => (),
                     };
                 }
                 let slot_duration = time::Duration::from_millis(12000);
@@ -95,7 +110,6 @@ impl<C: EthConfig> Service<C> {
                     break;
                 }
             }
-            
             counter = counter + 1;
             if counter > 65 {
                 break;
@@ -118,16 +132,18 @@ impl<C: EthConfig> Service<C> {
     }
 }
 
-fn parse_validators(pubkeys: Vec<String>) -> Result<Vec<(PublicKeyBytes, ValidatorIndex, String)>, String> {
+fn parse_validators(
+    pubkeys: Vec<String>,
+) -> Result<Vec<(PublicKeyBytes, ValidatorIndex, String)>, String> {
     const PREFIX: &str = "0x";
     let mut result = Vec::new();
-    for index in 0..pubkeys.len()  {
+    for index in 0..pubkeys.len() {
         if pubkeys[index].starts_with(PREFIX) {
             let pubkey_bytes = hex::decode(pubkeys[index].trim_start_matches(PREFIX)).unwrap();
             let pubkey = PublicKeyBytes::from_bytes(pubkey_bytes.as_slice()).unwrap();
             result.push((pubkey, index as u64, pubkeys[index].to_owned()));
         } else {
-            return Err(String::from( "Public key must have a 0x prefix"))
+            return Err(String::from("Public key must have a 0x prefix"));
         }
     }
     Ok(result)
