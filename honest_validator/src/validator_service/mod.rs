@@ -3,7 +3,7 @@ use crate::beacon_node::{BasicBeaconNode, BeaconNode, Error};
 use bls::{PublicKeyBytes, SecretKey};
 use hex;
 use std::{thread, time};
-use types::config::Config as EthConfig;
+use types::config::{Config as EthConfig};
 use types::primitives::{Epoch, ValidatorIndex};
 use serde::{Deserialize};
 
@@ -58,29 +58,25 @@ impl<C: EthConfig> Service<C> {
             let duties = self.beacon_node.get_duties(validator_pubkeys, epoch);
             let mut current_slot = beacon_state.slot % SLOTS_PER_EPOCH;
             loop {
-                println!("Work at slot: {}", current_slot);
+                println!("\n##################\nWork at slot: {}\n##################\n", current_slot);
                 for duty in duties.iter() {
                     if duty.attestation_slot == current_slot {
-                        let attestation = match self.get_validator_index(&duty.validator_pubkey) {
-                            Some(validator_index) => {
-                                println!("\tvalidator {} should attest block", validator_index);
-                                let private_key = (&self).get_private_key(validator_index);
-                                self.attestation_producer.get_attestation(
-                                    &beacon_state,
-                                    duty.attestation_committee_index,
-                                    duty.attestation_committee_position,
-                                    private_key
-                                )
-                            }
-                            _ => None,
-                        };
+                        let validator_index = self.get_validator_index(&duty.validator_pubkey).unwrap();
+                        println!("\n\tvalidator {} should attest block\n", validator_index);
+                        let private_key = (&self).get_private_key(validator_index);
+                        let attestation = self.attestation_producer.get_attestation(
+                            &beacon_state,
+                            duty.attestation_committee_index,
+                            duty.attestation_committee_position,
+                            private_key
+                        );
 
                         let attestation_result = match attestation {
                             Some(data) => self.beacon_node.publish_attestation(data),
                             None => {
                                 println!(
                                     "Failed to build attestation data, for validator: {}",
-                                    duty.validator_pubkey
+                                    validator_index
                                 );
                                 Err(Error::AttestionPublishingError)
                             }
@@ -168,7 +164,6 @@ fn parse_validators(
             let pubkey_bytes = hex::decode(public.trim_start_matches(PREFIX)).unwrap();
             let public_key = PublicKeyBytes::from_bytes(pubkey_bytes.as_slice()).unwrap();
             let private_key_bytes = hex::decode(private.trim_start_matches(PREFIX)).unwrap();
-            
             let mut bytes = vec![0; 48 - private_key_bytes.len()];
             bytes.extend_from_slice(&private_key_bytes[..]);
             let private_key = SecretKey::from_bytes(&bytes)
@@ -184,4 +179,76 @@ fn parse_validators(
         }
     }
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+    use types::config::{MinimalConfig};
+    
+    const VALIDATORS: &str = r#"
+        [{
+            "private":"0x25295f0d1d592a90b333e26e85149708208e9f8e8bc18f6c77bd62f8ad7a6866",
+            "public":"0xa99a76ed7796f7be22d5b7e85deeb7c5677e88e511e0b337618f8c4eb61349b4bf2d153f649f7b53359fe8b94a38e44c"
+          },
+          {
+            "private":"0x51d0b65185db6989ab0b560d6deed19c7ead0e24b9b6372cbecb1f26bdfad000",
+            "public":"0xb89bebc699769726a318c8e9971bd3171297c61aea4a6578a7a4f94b547dcba5bac16a89108b6b6a1fe3695d1a874a0b"
+        }]"#;
+
+        const INVALID_VALIDATORS: &str = r#"
+        [{
+            "private":"0x25295f0d1d592a90b333e26e85149708208e9f8e8bc18f6c77bd62f8ad7a6866",
+            "public":"a99a76ed7796f7be22d5b7e85deeb7c5677e88e511e0b337618f8c4eb61349b4bf2d153f649f7b53359fe8b94a38e44c"
+          },
+          {
+            "private":"51d0b65185db6989ab0b560d6deed19c7ead0e24b9b6372cbecb1f26bdfad000",
+            "public":"0xb89bebc699769726a318c8e9971bd3171297c61aea4a6578a7a4f94b547dcba5bac16a89108b6b6a1fe3695d1a874a0b"
+        }]"#;
+
+    #[test]
+    fn should_init_service() {
+        let keys: Vec<KeysPair> = serde_json::from_str(VALIDATORS).unwrap();
+        let service = Service::new(MinimalConfig::default(), keys);
+        assert_eq!(service.validators[0].public_key_str, "0xa99a76ed7796f7be22d5b7e85deeb7c5677e88e511e0b337618f8c4eb61349b4bf2d153f649f7b53359fe8b94a38e44c");
+        assert_eq!(service.validators.len(), 2);
+    }
+
+    #[test]
+    fn should_get_validator_index() {
+        let keys: Vec<KeysPair> = serde_json::from_str(VALIDATORS).unwrap();
+        let service = Service::new(MinimalConfig::default(), keys);
+        let index = service.get_validator_index(&String::from("0xb89bebc699769726a318c8e9971bd3171297c61aea4a6578a7a4f94b547dcba5bac16a89108b6b6a1fe3695d1a874a0b"));
+        assert_eq!(index, Some(1));
+        let index = service.get_validator_index(&String::from("random"));
+        assert_eq!(index, None);
+    }
+
+    #[test]
+    fn should_init_validators() {
+        let keys: Vec<KeysPair> = serde_json::from_str(VALIDATORS).unwrap();
+        let parsed = parse_validators(keys).unwrap();
+        assert_eq!(parsed.len(), 2);
+        assert_eq!(parsed[0].index, 0);
+        assert_eq!(parsed[1].index, 1);
+        let mut bytes = vec![0u8; 48];
+        let private_key_other_bytes = hex::decode("51d0b65185db6989ab0b560d6deed19c7ead0e24b9b6372cbecb1f26bdfad000").unwrap();
+        assert_eq!(private_key_other_bytes.len(), 32);
+        for i in 16..48 {
+            bytes[i] = private_key_other_bytes[i - 16];
+        }
+
+        assert_eq!(parsed[1].private_key, SecretKey::from_bytes(&bytes).unwrap());
+    }
+
+    #[test]
+    fn should_validate_validators() {
+        let keys: Vec<KeysPair> = serde_json::from_str(INVALID_VALIDATORS).unwrap();
+        let optb = Vec::new();
+        let parsed = parse_validators(keys).unwrap_or(optb);
+        assert_eq!(parsed.len(), 0);
+    }
+
+
 }

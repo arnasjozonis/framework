@@ -5,8 +5,6 @@ use hv::validator_service::{Service, KeysPair};
 use types::config::MinimalConfig;
 use std::fs::File;
 use std::io::{BufReader};
-use std::io::prelude::*;
-use serde::{Deserialize};
 
 enum AppConfiguration {
     InternalTest,
