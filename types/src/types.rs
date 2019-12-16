@@ -241,3 +241,11 @@ pub struct VoluntaryExit {
     #[signed_root(skip_hashing)]
     pub signature: Signature,
 }
+
+#[derive(
+    Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot,
+)]
+pub struct SignedBeaconBlock {
+    pub message: BeaconBlock,
+    pub signature: Signature,
+}
