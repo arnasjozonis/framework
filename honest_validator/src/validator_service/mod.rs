@@ -5,17 +5,31 @@ use hex;
 use std::{thread, time};
 use types::config::Config as EthConfig;
 use types::primitives::{Epoch, ValidatorIndex};
+use serde::{Deserialize};
 
 const SLOTS_PER_EPOCH: u64 = 8;
 
+#[derive(Deserialize)]
+pub struct KeysPair {
+    private: String,
+    public: String
+}
+
+pub struct Validator {
+    public_key: PublicKeyBytes,
+    index: ValidatorIndex,
+    public_key_str: String,
+    private_key: SecretKey
+}
+
 pub struct Service<C: EthConfig> {
     beacon_node: BasicBeaconNode,
-    validators: Vec<(PublicKeyBytes, ValidatorIndex, String)>,
+    validators: Vec<Validator>,
     attestation_producer: AttestationProducer<C>,
 }
 
 impl<C: EthConfig> Service<C> {
-    pub fn new(eth_config: C, validators_keys: Vec<String>) -> Service<C> {
+    pub fn new(eth_config: C, validators_keys: Vec<KeysPair>) -> Service<C> {
         let validators = parse_validators(validators_keys).unwrap();
         let attestation_producer = AttestationProducer {
             config: eth_config,
@@ -38,7 +52,7 @@ impl<C: EthConfig> Service<C> {
             let mut validator_pubkeys = Vec::new();
 
             for validator in &self.validators {
-                validator_pubkeys.push(validator.0.clone());
+                validator_pubkeys.push(validator.public_key.clone());
             }
 
             let duties = self.beacon_node.get_duties(validator_pubkeys, epoch);
@@ -50,13 +64,12 @@ impl<C: EthConfig> Service<C> {
                         let attestation = match self.get_validator_index(&duty.validator_pubkey) {
                             Some(validator_index) => {
                                 println!("\tvalidator {} should attest block", validator_index);
-
-                                let privkey = SecretKey::random();
+                                let private_key = (&self).get_private_key(validator_index);
                                 self.attestation_producer.get_attestation(
                                     &beacon_state,
                                     duty.attestation_committee_index,
                                     duty.attestation_committee_position,
-                                    &privkey,
+                                    private_key
                                 )
                             }
                             _ => None,
@@ -123,25 +136,49 @@ impl<C: EthConfig> Service<C> {
     }
 
     fn get_validator_index(&self, pubkey: &String) -> Option<ValidatorIndex> {
-        for (_, index, validator) in &self.validators {
-            if *validator == *pubkey {
-                return Some(index.clone());
+        for validator in &self.validators {
+            if validator.public_key_str == *pubkey {
+                return Some(validator.index.clone());
             }
         }
         None
     }
+
+    fn get_private_key(&self, validator_index: ValidatorIndex) -> SecretKey {
+        let mut privkey: SecretKey = SecretKey::random();
+        for v in &self.validators {
+            if v.index == validator_index {
+                privkey = v.private_key.clone();
+                break;
+            }
+        }
+        privkey
+    }
 }
 
 fn parse_validators(
-    pubkeys: Vec<String>,
-) -> Result<Vec<(PublicKeyBytes, ValidatorIndex, String)>, String> {
+    keys: Vec<KeysPair>,
+) -> Result<Vec<Validator>, String> {
     const PREFIX: &str = "0x";
     let mut result = Vec::new();
-    for index in 0..pubkeys.len() {
-        if pubkeys[index].starts_with(PREFIX) {
-            let pubkey_bytes = hex::decode(pubkeys[index].trim_start_matches(PREFIX)).unwrap();
-            let pubkey = PublicKeyBytes::from_bytes(pubkey_bytes.as_slice()).unwrap();
-            result.push((pubkey, index as u64, pubkeys[index].to_owned()));
+    for index in 0..keys.len() {
+        let public = &keys[index].public;
+        let private = &keys[index].private;
+        if public.starts_with(PREFIX) && private.starts_with(PREFIX) {
+            let pubkey_bytes = hex::decode(public.trim_start_matches(PREFIX)).unwrap();
+            let public_key = PublicKeyBytes::from_bytes(pubkey_bytes.as_slice()).unwrap();
+            let private_key_bytes = hex::decode(private.trim_start_matches(PREFIX)).unwrap();
+            
+            let mut bytes = vec![0; 48 - private_key_bytes.len()];
+            bytes.extend_from_slice(&private_key_bytes[..]);
+            let private_key = SecretKey::from_bytes(&bytes)
+                .map_err(|e| format!("Failed to decode bytes into secret key: {:?}", e))?;
+            result.push(Validator {
+                private_key,
+                public_key,
+                index: index as ValidatorIndex,
+                public_key_str: public.to_owned(),
+            });
         } else {
             return Err(String::from("Public key must have a 0x prefix"));
         }

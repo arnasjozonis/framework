@@ -242,10 +242,10 @@ pub struct VoluntaryExit {
     pub signature: Signature,
 }
 
-#[derive(
-    Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot,
-)]
-pub struct SignedBeaconBlock {
-    pub message: BeaconBlock,
-    pub signature: Signature,
-}
+// #[derive(
+//     Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot,
+// )]
+// pub struct SignedBeaconBlock {
+//     pub message: BeaconBlock<MinimalConfig>,
+//     pub signature: Signature,
+// }

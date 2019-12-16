@@ -1,11 +1,12 @@
 extern crate framework_honest_validator as hv;
 
 use clap::{App, Arg};
-use hv::validator_service::Service;
+use hv::validator_service::{Service, KeysPair};
 use types::config::MinimalConfig;
 use std::fs::File;
 use std::io::{BufReader};
 use std::io::prelude::*;
+use serde::{Deserialize};
 
 enum AppConfiguration {
     InternalTest,
@@ -38,13 +39,10 @@ fn main() {
         AppConfiguration::InternalTest => MinimalConfig::default(),
         AppConfiguration::Unsupported => MinimalConfig::default(),
     };
-    let mut validators = Vec::new();
-    let file = File::open("honest_validator/mock_data/validator_pubkeys.txt").unwrap();
+    let file = File::open("honest_validator/mock_data/mock_validators.json").unwrap();
     let buf_reader = BufReader::new(file);
-    for line in buf_reader.lines() {
-        let validator_key = line.unwrap();
-        validators.push(validator_key);
-    };
+    let validators: Vec<KeysPair> = serde_json::from_reader(buf_reader).unwrap();
+    
     let service: Service<MinimalConfig> = Service::new(cfg, validators);
     service.start();
 }

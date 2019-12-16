@@ -56,14 +56,14 @@ impl<C: Config> AttestationProducer<C> {
         &self,
         state: &BeaconState<MinimalConfig>,
         attestation_data: &AttestationData,
-        privkey: &SecretKey,
+        privkey: SecretKey,
     ) -> Signature {
         let domain = self.beacon_node.get_domain(
             state,
             MinimalConfig::domain_attestation(),
             Some(attestation_data.target.epoch),
         );
-        Signature::new(&attestation_data.tree_hash_root()[..], domain, privkey)
+        Signature::new(&attestation_data.tree_hash_root()[..], domain, &privkey)
     }
 
     fn construct_attestation(
@@ -71,7 +71,7 @@ impl<C: Config> AttestationProducer<C> {
         head_state: &BeaconState<MinimalConfig>,
         attestation_data: AttestationData,
         validator_committee_index: ValidatorIndex,
-        privkey: &SecretKey,
+        privkey: SecretKey,
     ) -> Option<Attestation<MinimalConfig>> {
         let mut aggregation_bits = BitList::with_capacity(MAX_VALIDATORS_PER_COMMITTEE)
             .ok()
@@ -95,7 +95,7 @@ impl<C: Config> AttestationProducer<C> {
         beacon_state: &BeaconState<MinimalConfig>,
         commitee_index: CommitteeIndex,
         validator_commitee_index: ValidatorIndex,
-        privkey: &SecretKey,
+        privkey: SecretKey,
     ) -> Option<Attestation<MinimalConfig>> {
         println!(
             "Validator at committe {} (position {}) starts attestation",
