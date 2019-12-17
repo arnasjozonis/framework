@@ -42,12 +42,15 @@ impl<C: EthConfig> Service<C> {
         }
     }
 
-    pub fn start(&self) {
+    pub fn start(&self) -> Result<(), String>{
         let mut counter = 0u128;
 
         loop {
             println!("Fetching current beacon state...");
-            let beacon_state = self.beacon_node.get_state();
+            let beacon_state = match &(self.beacon_node.get_state()) {
+                Some(state) => state,
+                None => return Err(String::from("can not get beacon state"))
+            };
             let epoch: Epoch = beacon_state.fork.epoch;
             let mut validator_pubkeys = Vec::new();
 
@@ -125,6 +128,7 @@ impl<C: EthConfig> Service<C> {
             }
         }
         &self.end();
+        Ok(())
     }
 
     fn end(&self) {
@@ -183,10 +187,12 @@ fn parse_validators(
 
 #[cfg(test)]
 mod tests {
-    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    
     use super::*;
     use types::config::{MinimalConfig};
-    
+    use bls::{Signature, PublicKey};
+    use types::primitives::{Domain};
+
     const VALIDATORS: &str = r#"
         [{
             "private":"0x25295f0d1d592a90b333e26e85149708208e9f8e8bc18f6c77bd62f8ad7a6866",
@@ -250,5 +256,17 @@ mod tests {
         assert_eq!(parsed.len(), 0);
     }
 
-
+    #[test]
+    fn should_accept_signature_for_attestation() {
+        let keys: Vec<KeysPair> = serde_json::from_str(VALIDATORS).unwrap();
+        let parsed = parse_validators(keys).unwrap();
+        let domain: Domain = 2; // attestation domain;
+        let test_msg = [1u8, 2u8];
+        let signature = Signature::new(&test_msg, domain, &(parsed[0].private_key));
+        let keys: Vec<KeysPair> = serde_json::from_str(VALIDATORS).unwrap();
+        let pubkey_bytes = hex::decode(keys[0].public.trim_start_matches("0x")).unwrap();
+        let public_key = PublicKey::from_bytes(&pubkey_bytes).unwrap();
+        let verification_result = signature.verify(&test_msg, domain, &public_key);
+        assert!(verification_result);
+    }
 }
