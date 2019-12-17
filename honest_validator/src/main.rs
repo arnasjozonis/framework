@@ -42,5 +42,5 @@ fn main() {
     let validators: Vec<KeysPair> = serde_json::from_reader(buf_reader).unwrap();
     
     let service: Service<MinimalConfig> = Service::new(cfg, validators);
-    service.start();
+    service.start().unwrap();
 }

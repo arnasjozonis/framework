@@ -63,6 +63,7 @@ impl<C: Config> AttestationProducer<C> {
             MinimalConfig::domain_attestation(),
             Some(attestation_data.target.epoch),
         );
+        println!("Domain: {}", domain);
         Signature::new(&attestation_data.tree_hash_root()[..], domain, &privkey)
     }
 
