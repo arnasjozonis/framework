@@ -21,7 +21,7 @@ pub enum Error {
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct BeaconStateResponse {
     pub root: String,
-    pub beacon_state: BeaconState<MinimalConfig>,
+    pub beacon_state: Option<BeaconState<MinimalConfig>>,
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -40,7 +40,7 @@ pub struct DutiesRequest {
 }
 
 pub trait BeaconNode {
-    fn get_state(&self) -> &BeaconState<MinimalConfig>;
+    fn get_state(&self) -> &Option<BeaconState<MinimalConfig>>;
 
     fn get_current_epoch(&self, state: &BeaconState<MinimalConfig>) -> Epoch;
 
@@ -82,16 +82,20 @@ pub trait BeaconNode {
 #[derive(Clone)]
 pub struct BasicBeaconNode {
     pub beacon_node_rest_client: Rc<RestClient>,
-    last_known_state: BeaconState<MinimalConfig>,
+    last_known_state: Option<BeaconState<MinimalConfig>>,
 }
 
 impl BasicBeaconNode {
     pub fn new() -> BasicBeaconNode {
         let beacon_node_rest_client = Rc::new(RestClient::new(String::from("http://localhost:5052")).unwrap());
-        let state: BeaconStateResponse = beacon_node_rest_client.get(&"/beacon/state").unwrap();
+        let state: Option<BeaconStateResponse> = beacon_node_rest_client.get(&"/beacon/state");
+        let last_known_state =  match state {
+            Some(state_response) => state_response.beacon_state,
+            None => None
+        };
         BasicBeaconNode {
             beacon_node_rest_client,
-            last_known_state: state.beacon_state,
+            last_known_state
         }
     }
 
@@ -105,7 +109,7 @@ impl BasicBeaconNode {
 }
 
 impl BeaconNode for BasicBeaconNode {
-    fn get_state(&self) -> &BeaconState<MinimalConfig> {
+    fn get_state(&self) -> &Option<BeaconState<MinimalConfig>> {
         &self.last_known_state
     }
 

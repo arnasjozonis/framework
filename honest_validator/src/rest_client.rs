@@ -1,5 +1,3 @@
-// TODO: rewrite rest client with reqwest: https://crates.io/crates/reqwest
-// Hyper Imports
 use hyper::client::Client;
 use hyper::header::HeaderValue;
 use hyper::{self, Body, Method, Request, Uri};

@@ -56,14 +56,15 @@ impl<C: Config> AttestationProducer<C> {
         &self,
         state: &BeaconState<MinimalConfig>,
         attestation_data: &AttestationData,
-        privkey: &SecretKey,
+        privkey: SecretKey,
     ) -> Signature {
         let domain = self.beacon_node.get_domain(
             state,
             MinimalConfig::domain_attestation(),
             Some(attestation_data.target.epoch),
         );
-        Signature::new(&attestation_data.tree_hash_root()[..], domain, privkey)
+        println!("Domain: {}", domain);
+        Signature::new(&attestation_data.tree_hash_root()[..], domain, &privkey)
     }
 
     fn construct_attestation(
@@ -71,7 +72,7 @@ impl<C: Config> AttestationProducer<C> {
         head_state: &BeaconState<MinimalConfig>,
         attestation_data: AttestationData,
         validator_committee_index: ValidatorIndex,
-        privkey: &SecretKey,
+        privkey: SecretKey,
     ) -> Option<Attestation<MinimalConfig>> {
         let mut aggregation_bits = BitList::with_capacity(MAX_VALIDATORS_PER_COMMITTEE)
             .ok()
@@ -95,7 +96,7 @@ impl<C: Config> AttestationProducer<C> {
         beacon_state: &BeaconState<MinimalConfig>,
         commitee_index: CommitteeIndex,
         validator_commitee_index: ValidatorIndex,
-        privkey: &SecretKey,
+        privkey: SecretKey,
     ) -> Option<Attestation<MinimalConfig>> {
         println!(
             "Validator at committe {} (position {}) starts attestation",
@@ -111,5 +112,66 @@ impl<C: Config> AttestationProducer<C> {
             validator_commitee_index,
             privkey,
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use types::config::MinimalConfig;
+
+    #[test]
+    fn construct_attestation_data() {
+        let attestation_producer = AttestationProducer {
+            config: MinimalConfig::default(),
+            beacon_node: BasicBeaconNode::new(),
+        };
+
+        let beacon_state: BeaconState<MinimalConfig> = BeaconState {
+            slot: 16,
+            ..BeaconState::default()
+        };
+
+        let assigned_slot = 9;
+        let committee_index = 2;
+
+        let attestation_data = attestation_producer.construct_attestation_data(
+            &beacon_state,
+            assigned_slot,
+            committee_index,
+        );
+        assert_eq!(attestation_data.slot, assigned_slot);
+        assert_eq!(attestation_data.index, committee_index);
+        assert_eq!(attestation_data.target.epoch, 2);
+        assert_eq!(
+            attestation_data.target.root,
+            beacon_state.latest_block_header.state_root
+        );
+    }
+
+    #[test]
+    fn get_signed_attestation_data() {
+        let attestation_producer = AttestationProducer {
+            config: MinimalConfig::default(),
+            beacon_node: BasicBeaconNode::new(),
+        };
+
+        let beacon_state: BeaconState<MinimalConfig> = BeaconState {
+            ..BeaconState::default()
+        };
+
+        let attestation_data = AttestationData {
+            ..AttestationData::default()
+        };
+
+        let bytes = vec![0u8; 48];
+        let privkey = SecretKey::from_bytes(&bytes).unwrap();
+
+        let signature = attestation_producer.get_signed_attestation_data(
+            &beacon_state,
+            &attestation_data,
+            privkey,
+        );
+        assert_eq!(signature.is_empty(), false);
     }
 }
