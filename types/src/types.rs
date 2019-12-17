@@ -242,10 +242,8 @@ pub struct VoluntaryExit {
     pub signature: Signature,
 }
 
-#[derive(
-    Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot,
-)]
-pub struct SignedBeaconBlock {
-    pub message: BeaconBlock,
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot)]
+pub struct SignedBeaconBlock<C: Config> {
+    pub message: BeaconBlock<C>,
     pub signature: Signature,
 }
