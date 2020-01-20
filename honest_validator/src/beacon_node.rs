@@ -1,12 +1,12 @@
 use crate::rest_client::RestClient;
-use serde::{Deserialize, Serialize};
-use types::beacon_state::BeaconState;
-use types::config::{MinimalConfig};
-use types::primitives::{CommitteeIndex, Domain, DomainType, Epoch, Slot, H256, ValidatorIndex};
-use types::types::{Attestation,BeaconBlock};
-use std::rc::Rc;
 use bls::PublicKeyBytes;
 use bytes::{BufMut, BytesMut};
+use serde::{Deserialize, Serialize};
+use std::rc::Rc;
+use types::beacon_state::BeaconState;
+use types::config::MinimalConfig;
+use types::primitives::{CommitteeIndex, Domain, DomainType, Epoch, Slot, ValidatorIndex, H256};
+use types::types::{Attestation, BeaconBlock};
 
 const SLOTS_PER_HISTORICAL_ROOT: Slot = 8192;
 const SLOTS_PER_EPOCH: u64 = 8;
@@ -16,7 +16,7 @@ pub enum Error {
     SlotOutOfRange,
     IndexOutOfRange,
     ApiError,
-    AttestionPublishingError
+    AttestionPublishingError,
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -31,13 +31,13 @@ pub struct DutyInfo {
     pub attestation_slot: Slot,
     pub attestation_committee_index: CommitteeIndex,
     pub attestation_committee_position: ValidatorIndex,
-    pub block_proposal_slot: Option<Slot>
+    pub block_proposal_slot: Option<Slot>,
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct DutiesRequest {
     pub pubkeys: Vec<PublicKeyBytes>,
-    pub epoch: Epoch
+    pub epoch: Epoch,
 }
 
 pub trait BeaconNode {
@@ -46,23 +46,15 @@ pub trait BeaconNode {
     fn get_current_epoch(&self, state: &BeaconState<MinimalConfig>) -> Epoch;
 
     fn compute_start_slot_at_epoch(&self, epoch: Epoch) -> Slot;
-    
     fn get_block_root(
         &self,
         state: &BeaconState<MinimalConfig>,
         epoch: Epoch,
     ) -> Result<H256, Error>;
 
-    fn get_duties(
-        &self,
-        validators: Vec<PublicKeyBytes>,
-        epoch: Epoch,
-    ) -> Vec<DutyInfo>;
+    fn get_duties(&self, validators: Vec<PublicKeyBytes>, epoch: Epoch) -> Vec<DutyInfo>;
 
-    fn publish_attestation(
-        &self,
-        attestation: Attestation<MinimalConfig>
-    ) -> Result<(), Error>;
+    fn publish_attestation(&self, attestation: Attestation<MinimalConfig>) -> Result<(), Error>;
 
     fn get_block_root_at_slot(
         &self,
@@ -89,16 +81,17 @@ pub struct BasicBeaconNode {
 impl BasicBeaconNode {
     pub fn new() -> BasicBeaconNode {
         println!("creating rest client.");
-        let beacon_node_rest_client = Rc::new(RestClient::new(String::from("http://localhost:5052")).unwrap());
+        let beacon_node_rest_client =
+            Rc::new(RestClient::new(String::from("http://localhost:5052")).unwrap());
         println!("rest client created.");
         let state: Option<BeaconStateResponse> = beacon_node_rest_client.get(&"/beacon/state");
-        let last_known_state =  match state {
+        let last_known_state = match state {
             Some(state_response) => state_response.beacon_state,
-            None => None
+            None => None,
         };
         BasicBeaconNode {
             beacon_node_rest_client,
-            last_known_state
+            last_known_state,
         }
     }
 
@@ -132,18 +125,23 @@ impl BeaconNode for BasicBeaconNode {
     fn get_duties(&self, validators: Vec<PublicKeyBytes>, epoch: Epoch) -> Vec<DutyInfo> {
         let request_body = Option::Some(DutiesRequest {
             pubkeys: validators,
-            epoch
+            epoch,
         });
-        (&self).beacon_node_rest_client.post("/validator/duties", request_body).unwrap()
+        (&self)
+            .beacon_node_rest_client
+            .post("/validator/duties", request_body)
+            .unwrap()
     }
 
     fn publish_attestation(&self, request_body: Attestation<MinimalConfig>) -> Result<(), Error> {
-        match (&self).beacon_node_rest_client.post("/validator/attestation", Option::Some(request_body)) {
+        match (&self)
+            .beacon_node_rest_client
+            .post("/validator/attestation", Option::Some(request_body))
+        {
             Some(()) => Ok(()),
-            _ => Err(Error::AttestionPublishingError)
+            _ => Err(Error::AttestionPublishingError),
         }
     }
-
 
     fn get_block_root(
         &self,
@@ -175,7 +173,7 @@ impl BeaconNode for BasicBeaconNode {
         let mut bytes: Vec<u8> = int_to_bytes4(domain_type);
         let epoch = match message_epoch {
             Some(epoch) => epoch,
-            None => state.fork.epoch
+            None => state.fork.epoch,
         };
         let mut version = if epoch < state.fork.epoch {
             state.fork.previous_version.clone().to_vec()
@@ -188,7 +186,6 @@ impl BeaconNode for BasicBeaconNode {
         fork_and_domain.copy_from_slice(&bytes);
 
         u64::from_le_bytes(fork_and_domain)
-
     }
 }
 

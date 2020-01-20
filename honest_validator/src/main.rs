@@ -1,10 +1,10 @@
 extern crate framework_honest_validator as hv;
 
 use clap::{App, Arg};
-use hv::validator_service::{Service, KeysPair};
-use types::config::MinimalConfig;
+use hv::validator_service::{KeysPair, Service};
 use std::fs::File;
-use std::io::{BufReader};
+use std::io::BufReader;
+use types::config::MinimalConfig;
 
 enum AppConfiguration {
     InternalTest,
@@ -40,7 +40,6 @@ fn main() {
     let file = File::open("mock_data/mock_validators.json").unwrap();
     let buf_reader = BufReader::new(file);
     let validators: Vec<KeysPair> = serde_json::from_reader(buf_reader).unwrap();
-    
     let service: Service<MinimalConfig> = Service::new(cfg, validators);
     service.start().unwrap();
 }

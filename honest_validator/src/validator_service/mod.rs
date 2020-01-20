@@ -1,26 +1,26 @@
 use crate::attestation_producer::AttestationProducer;
-use crate::block_producer::{produce_block};
 use crate::beacon_node::{BasicBeaconNode, BeaconNode, Error};
+use crate::block_producer::produce_block;
 use bls::{PublicKeyBytes, SecretKey};
 use hex;
+use serde::Deserialize;
 use std::{thread, time};
-use types::config::{Config as EthConfig};
+use types::config::Config as EthConfig;
 use types::primitives::{Epoch, ValidatorIndex};
-use serde::{Deserialize};
 
 const SLOTS_PER_EPOCH: u64 = 8;
 
 #[derive(Deserialize)]
 pub struct KeysPair {
     private: String,
-    public: String
+    public: String,
 }
 
 pub struct Validator {
     public_key: PublicKeyBytes,
     index: ValidatorIndex,
     public_key_str: String,
-    private_key: SecretKey
+    private_key: SecretKey,
 }
 
 pub struct Service<C: EthConfig> {
@@ -43,14 +43,14 @@ impl<C: EthConfig> Service<C> {
         }
     }
 
-    pub fn start(&self) -> Result<(), String>{
+    pub fn start(&self) -> Result<(), String> {
         let mut counter = 0u128;
 
         loop {
             println!("Fetching current beacon state...");
             let beacon_state = match &(self.beacon_node.get_state()) {
                 Some(state) => state,
-                None => return Err(String::from("can not get beacon state"))
+                None => return Err(String::from("can not get beacon state")),
             };
             let epoch: Epoch = beacon_state.fork.epoch;
             let mut validator_pubkeys = Vec::new();
@@ -62,23 +62,24 @@ impl<C: EthConfig> Service<C> {
             let duties = self.beacon_node.get_duties(validator_pubkeys, epoch);
             let mut current_slot = beacon_state.slot % SLOTS_PER_EPOCH;
             loop {
-                println!("\n##################\nWork at slot: {}\n##################\n", current_slot);
+                println!(
+                    "\n##################\nWork at slot: {}\n##################\n",
+                    current_slot
+                );
                 for duty in duties.iter() {
                     if duty.attestation_slot == current_slot {
-                        let validator_index = self.get_validator_index(&duty.validator_pubkey).unwrap();
+                        let validator_index =
+                            self.get_validator_index(&duty.validator_pubkey).unwrap();
                         let private_key = (&self).get_private_key(validator_index);
                         let test = private_key.clone();
                         print_privates(test, &validator_index);
-        
-                        
                         println!("\n\tvalidator {} should attest block\n\t", validator_index);
-                        
                         println!("\n\n");
                         let attestation = self.attestation_producer.get_attestation(
                             &beacon_state,
                             duty.attestation_committee_index,
                             duty.attestation_committee_position,
-                            private_key
+                            private_key,
                         );
 
                         let attestation_result = match attestation {
@@ -103,16 +104,13 @@ impl<C: EthConfig> Service<C> {
                     }
                     match duty.block_proposal_slot {
                         Some(slot) => {
-                            
                             if slot == current_slot {
-                                let validator_index = self.get_validator_index(&duty.validator_pubkey).unwrap();
+                                let validator_index =
+                                    self.get_validator_index(&duty.validator_pubkey).unwrap();
                                 let private_key = (&self).get_private_key(validator_index);
                                 //produce_block(&self.beacon_node, beacon_state, private_key, slot);
                                 println!("\n\n");
-                                println!(
-                                    "\t\tvalidator {} should propose block",
-                                    validator_index
-                                );
+                                println!("\t\tvalidator {} should propose block", validator_index);
                                 println!("\n\n");
                             }
                         }
@@ -162,9 +160,7 @@ impl<C: EthConfig> Service<C> {
     }
 }
 
-fn parse_validators(
-    keys: Vec<KeysPair>,
-) -> Result<Vec<Validator>, String> {
+fn parse_validators(keys: Vec<KeysPair>) -> Result<Vec<Validator>, String> {
     const PREFIX: &str = "0x";
     let mut result = Vec::new();
     for index in 0..keys.len() {
@@ -221,7 +217,6 @@ fn print_privates(pk: SecretKey, vi: &ValidatorIndex) {
             pk_bytes.push(pkb2[idx]);
         }
     }
-    
     for i in 0..pk_bytes.len() {
         print!("{} ", pk_bytes[i]);
     }
@@ -229,11 +224,10 @@ fn print_privates(pk: SecretKey, vi: &ValidatorIndex) {
 
 #[cfg(test)]
 mod tests {
-    
     use super::*;
-    use types::config::{MinimalConfig};
-    use bls::{Signature, PublicKey};
-    use types::primitives::{Domain};
+    use bls::{PublicKey, Signature};
+    use types::config::MinimalConfig;
+    use types::primitives::Domain;
 
     const VALIDATORS: &str = r#"
         [{
@@ -245,7 +239,7 @@ mod tests {
             "public":"0xb89bebc699769726a318c8e9971bd3171297c61aea4a6578a7a4f94b547dcba5bac16a89108b6b6a1fe3695d1a874a0b"
         }]"#;
 
-        const INVALID_VALIDATORS: &str = r#"
+    const INVALID_VALIDATORS: &str = r#"
         [{
             "private":"0x25295f0d1d592a90b333e26e85149708208e9f8e8bc18f6c77bd62f8ad7a6866",
             "public":"a99a76ed7796f7be22d5b7e85deeb7c5677e88e511e0b337618f8c4eb61349b4bf2d153f649f7b53359fe8b94a38e44c"
@@ -281,13 +275,18 @@ mod tests {
         assert_eq!(parsed[0].index, 0);
         assert_eq!(parsed[1].index, 1);
         let mut bytes = vec![0u8; 48];
-        let private_key_other_bytes = hex::decode("51d0b65185db6989ab0b560d6deed19c7ead0e24b9b6372cbecb1f26bdfad000").unwrap();
+        let private_key_other_bytes =
+            hex::decode("51d0b65185db6989ab0b560d6deed19c7ead0e24b9b6372cbecb1f26bdfad000")
+                .unwrap();
         assert_eq!(private_key_other_bytes.len(), 32);
         for i in 16..48 {
             bytes[i] = private_key_other_bytes[i - 16];
         }
 
-        assert_eq!(parsed[1].private_key, SecretKey::from_bytes(&bytes).unwrap());
+        assert_eq!(
+            parsed[1].private_key,
+            SecretKey::from_bytes(&bytes).unwrap()
+        );
     }
 
     #[test]

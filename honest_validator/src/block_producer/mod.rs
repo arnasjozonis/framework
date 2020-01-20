@@ -1,21 +1,20 @@
 use crate::beacon_node::{BasicBeaconNode, BeaconNode, Error};
-use types::types::{SignedBeaconBlock, BeaconBlock, Eth1Data};
-use types::config::{Config as EthConfig, MinimalConfig};
-use types::primitives::{Epoch, ValidatorIndex, Slot, H256};
 use bls::PublicKeyBytes;
 use bls::{SecretKey, Signature};
-use types::beacon_state::BeaconState;
+use hex;
 use std::{thread, time};
 use tree_hash::TreeHash;
-use hex;
+use types::beacon_state::BeaconState;
+use types::config::{Config as EthConfig, MinimalConfig};
+use types::primitives::{Epoch, Slot, ValidatorIndex, H256};
+use types::types::{BeaconBlock, Eth1Data, SignedBeaconBlock};
 
 pub fn produce_block(
     beacon_node: &BasicBeaconNode,
     state: &BeaconState<MinimalConfig>,
     privkey: SecretKey,
-    slot: Slot) -> BeaconBlock<MinimalConfig> 
-{
-
+    slot: Slot,
+) -> BeaconBlock<MinimalConfig> {
     let domain = beacon_node.get_domain(
         &state,
         MinimalConfig::domain_beacon_proposer(),
@@ -23,16 +22,14 @@ pub fn produce_block(
     );
     let root = state.block_roots.last().unwrap();
     let parent_block = beacon_node.get_block(slot, hex::encode(root)).unwrap();
-    
     let mut new_block = beacon_node.get_block(slot, hex::encode(root)).unwrap();
     let mut block_confirmed = false;
-    
     if parent_block.slot < slot {
-        new_block.parent_root = H256::from_slice(&parent_block.tree_hash_root()[..]); 
-        new_block.body.randao_reveal = Signature::new(&new_block.tree_hash_root()[..], domain, &privkey);
+        new_block.parent_root = H256::from_slice(&parent_block.tree_hash_root()[..]);
+        new_block.body.randao_reveal =
+            Signature::new(&new_block.tree_hash_root()[..], domain, &privkey);
         new_block.body.eth1_data = state.eth1_data.clone();
     }
-    
     new_block
 }
 
@@ -59,6 +56,3 @@ pub fn produce_block(
 // pub fn get_eth1_data(state: BeaconState<MinimalConfig>, distance: u64) -> Eth1Data {
 //     let eth_data = state.eth1_data_votes;
 // }
-
-
-

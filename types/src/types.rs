@@ -1,13 +1,13 @@
 //temporary Lighthouse SSZ and hashing implementation
 use bls::PublicKeyBytes;
-use serde::{Deserialize, Deserializer, Serializer, Serialize};
+use hex;
 use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use ssz_derive::{Decode, Encode};
 use ssz_types::{BitList, FixedVector, VariableList};
 use tree_hash::TreeHash;
 use tree_hash_derive::{SignedRoot, TreeHash};
 use typenum::{Sum, U1};
-use hex;
 
 use crate::config::*;
 use crate::consts;
@@ -288,9 +288,7 @@ pub struct VoluntaryExit {
     pub signature: Signature,
 }
 
-#[derive(
-    Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot,
-)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot)]
 pub struct SignedBeaconBlock {
     pub message: BeaconBlock<MinimalConfig>,
     pub signature: Signature,
