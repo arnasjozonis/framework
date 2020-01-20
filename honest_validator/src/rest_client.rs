@@ -47,6 +47,7 @@ impl RestClient {
         TBody: Serialize
     {
         let host = self.base_url.clone();
+        println!("posting: {}", host.clone() + resource_uri);
         let uri: Uri = (host + resource_uri).parse().unwrap();
         println!("Calling POST: {}", uri);
         match self.post_request(uri, body) {
@@ -114,7 +115,7 @@ impl RestClient {
     {
         let host = self.base_url.clone();
         let uri: Uri = (host + resource_uri).parse().unwrap();
-        println!("{}", uri);
+        println!("URI: {}", uri);
         self.get_request(uri)
     }
 

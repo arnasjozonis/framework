@@ -1,12 +1,13 @@
 //temporary Lighthouse SSZ and hashing implementation
 use bls::PublicKeyBytes;
-use serde::{Deserialize, Serialize};
-use serde_bytes;
+use serde::{Deserialize, Deserializer, Serializer, Serialize};
+use serde::de::Error;
 use ssz_derive::{Decode, Encode};
 use ssz_types::{BitList, FixedVector, VariableList};
 use tree_hash::TreeHash;
 use tree_hash_derive::{SignedRoot, TreeHash};
 use typenum::{Sum, U1};
+use hex;
 
 use crate::config::*;
 use crate::consts;
@@ -169,11 +170,56 @@ pub struct Eth1Data {
     Default,
 )]
 pub struct Fork {
-    #[serde(with = "serde_bytes")]
-    pub previous_version: Version,
-    #[serde(with = "serde_bytes")]
-    pub current_version: Version,
+    #[serde(
+        serialize_with = "fork_to_hex_str",
+        deserialize_with = "fork_from_hex_str"
+    )]
+    pub previous_version: [u8; 4],
+    #[serde(
+        serialize_with = "fork_to_hex_str",
+        deserialize_with = "fork_from_hex_str"
+    )]
+    pub current_version: [u8; 4],
     pub epoch: Epoch,
+}
+
+const FORK_BYTES_LEN: usize = 4;
+
+#[allow(clippy::trivially_copy_pass_by_ref)]
+pub fn fork_to_hex_str<S>(bytes: &[u8; FORK_BYTES_LEN], serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let mut hex_string: String = "0x".to_string();
+    hex_string.push_str(&hex::encode(&bytes));
+
+    serializer.serialize_str(&hex_string)
+}
+
+pub fn fork_from_hex_str<'de, D>(deserializer: D) -> Result<[u8; FORK_BYTES_LEN], D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: String = Deserialize::deserialize(deserializer)?;
+    let mut array = [0 as u8; FORK_BYTES_LEN];
+
+    let start = s
+        .as_str()
+        .get(2..)
+        .ok_or_else(|| D::Error::custom("string length too small"))?;
+    let decoded: Vec<u8> = hex::decode(&start).map_err(D::Error::custom)?;
+
+    if decoded.len() != FORK_BYTES_LEN {
+        return Err(D::Error::custom("Fork length too long"));
+    }
+
+    for (i, item) in array.iter_mut().enumerate() {
+        if i > decoded.len() {
+            break;
+        }
+        *item = decoded[i];
+    }
+    Ok(array)
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash)]

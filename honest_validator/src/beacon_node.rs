@@ -6,6 +6,7 @@ use types::primitives::{CommitteeIndex, Domain, DomainType, Epoch, Slot, H256, V
 use types::types::{Attestation,BeaconBlock};
 use std::rc::Rc;
 use bls::PublicKeyBytes;
+use bytes::{BufMut, BytesMut};
 
 const SLOTS_PER_HISTORICAL_ROOT: Slot = 8192;
 const SLOTS_PER_EPOCH: u64 = 8;
@@ -76,7 +77,7 @@ pub trait BeaconNode {
         message_epoch: Option<Epoch>,
     ) -> Domain;
 
-    fn get_block(&self, slot: Slot, randao_reveal: String)->Option<BeaconBlock<MinimalConfig>>;
+    fn get_block(&self, slot: Slot, root: String) -> Option<BeaconBlock<MinimalConfig>>;
 }
 
 #[derive(Clone)]
@@ -87,7 +88,9 @@ pub struct BasicBeaconNode {
 
 impl BasicBeaconNode {
     pub fn new() -> BasicBeaconNode {
+        println!("creating rest client.");
         let beacon_node_rest_client = Rc::new(RestClient::new(String::from("http://localhost:5052")).unwrap());
+        println!("rest client created.");
         let state: Option<BeaconStateResponse> = beacon_node_rest_client.get(&"/beacon/state");
         let last_known_state =  match state {
             Some(state_response) => state_response.beacon_state,
@@ -113,8 +116,8 @@ impl BeaconNode for BasicBeaconNode {
         &self.last_known_state
     }
 
-    fn get_block(&self, slot: Slot, randao_reveal: String) -> Option<BeaconBlock<MinimalConfig>> {
-        let url = format!("/validator/block?slot={}&randao_reveal={}", slot, randao_reveal);
+    fn get_block(&self, slot: Slot, root: String) -> Option<BeaconBlock<MinimalConfig>> {
+        let url = format!("/validator/block?slot={}&root={}", slot, root);
         (&self).beacon_node_rest_client.get(&url[..])
     }
 
@@ -169,22 +172,28 @@ impl BeaconNode for BasicBeaconNode {
         domain_type: DomainType,
         message_epoch: Option<Epoch>,
     ) -> Domain {
-
+        let mut bytes: Vec<u8> = int_to_bytes4(domain_type);
         let epoch = match message_epoch {
             Some(epoch) => epoch,
             None => state.fork.epoch
         };
-
-        let mut result = (domain_type as u64) << 8;
-
-        let version = if epoch < state.fork.epoch {
-            state.fork.previous_version.clone()
+        let mut version = if epoch < state.fork.epoch {
+            state.fork.previous_version.clone().to_vec()
         } else {
-            state.fork.current_version.clone()
+            state.fork.current_version.clone().to_vec()
         };
-        for byte in version {
-            result = (result | (byte as u64) ) << 2; 
-        }
-        result
+        println!("{}", version.len());
+        bytes.append(&mut version);
+        let mut fork_and_domain = [0; 8];
+        fork_and_domain.copy_from_slice(&bytes);
+
+        u64::from_le_bytes(fork_and_domain)
+
     }
+}
+
+pub fn int_to_bytes4(int: u32) -> Vec<u8> {
+    let mut bytes = BytesMut::with_capacity(4);
+    bytes.put_u32_le(int);
+    bytes.to_vec()
 }

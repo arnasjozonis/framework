@@ -1,4 +1,5 @@
 use crate::attestation_producer::AttestationProducer;
+use crate::block_producer::{produce_block};
 use crate::beacon_node::{BasicBeaconNode, BeaconNode, Error};
 use bls::{PublicKeyBytes, SecretKey};
 use hex;
@@ -102,19 +103,16 @@ impl<C: EthConfig> Service<C> {
                     }
                     match duty.block_proposal_slot {
                         Some(slot) => {
+                            
                             if slot == current_slot {
+                                let validator_index = self.get_validator_index(&duty.validator_pubkey).unwrap();
+                                let private_key = (&self).get_private_key(validator_index);
+                                //produce_block(&self.beacon_node, beacon_state, private_key, slot);
                                 println!("\n\n");
                                 println!(
                                     "\t\tvalidator {} should propose block",
-                                    duty.validator_pubkey
+                                    validator_index
                                 );
-                                match (&self)
-                                    .beacon_node
-                                    .get_block(slot, String::from("tetatata"))
-                                {
-                                    Some(_) => println!("block received"),
-                                    None => println!("block not received"),
-                                };
                                 println!("\n\n");
                             }
                         }

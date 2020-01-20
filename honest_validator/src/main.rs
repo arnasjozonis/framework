@@ -37,7 +37,7 @@ fn main() {
         AppConfiguration::InternalTest => MinimalConfig::default(),
         AppConfiguration::Unsupported => MinimalConfig::default(),
     };
-    let file = File::open("honest_validator/mock_data/mock_validators.json").unwrap();
+    let file = File::open("mock_data/mock_validators.json").unwrap();
     let buf_reader = BufReader::new(file);
     let validators: Vec<KeysPair> = serde_json::from_reader(buf_reader).unwrap();
     
