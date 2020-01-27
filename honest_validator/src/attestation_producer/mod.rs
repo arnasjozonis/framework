@@ -63,7 +63,6 @@ impl<C: Config> AttestationProducer<C> {
             MinimalConfig::domain_attestation(),
             Some(attestation_data.target.epoch),
         );
-        println!("Domain: {}", domain);
         Signature::new(&attestation_data.tree_hash_root()[..], domain, &privkey)
     }
 
@@ -99,7 +98,7 @@ impl<C: Config> AttestationProducer<C> {
         privkey: SecretKey,
     ) -> Option<Attestation<MinimalConfig>> {
         println!(
-            "Validator at committe {} (position {}) starts attestation",
+            "\tValidator at committe {} (position {}) starts attestation",
             commitee_index, validator_commitee_index
         );
 

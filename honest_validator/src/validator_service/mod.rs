@@ -63,7 +63,7 @@ impl<C: EthConfig> Service<C> {
             let mut current_slot = beacon_state.slot % SLOTS_PER_EPOCH;
             loop {
                 println!(
-                    "\n##################\nWork at slot: {}\n##################\n",
+                    "Working at slot: {}...",
                     current_slot
                 );
                 for duty in duties.iter() {
@@ -72,9 +72,8 @@ impl<C: EthConfig> Service<C> {
                             self.get_validator_index(&duty.validator_pubkey).unwrap();
                         let private_key = (&self).get_private_key(validator_index);
                         let test = private_key.clone();
-                        print_privates(test, &validator_index);
-                        println!("\n\tvalidator {} should attest block\n\t", validator_index);
-                        println!("\n\n");
+                        //print_privates(test, &validator_index);
+                        println!("\tvalidator {} should attest block", validator_index);
                         let attestation = self.attestation_producer.get_attestation(
                             &beacon_state,
                             duty.attestation_committee_index,
@@ -109,9 +108,7 @@ impl<C: EthConfig> Service<C> {
                                     self.get_validator_index(&duty.validator_pubkey).unwrap();
                                 let private_key = (&self).get_private_key(validator_index);
                                 //produce_block(&self.beacon_node, beacon_state, private_key, slot);
-                                println!("\n\n");
-                                println!("\t\tvalidator {} should propose block", validator_index);
-                                println!("\n\n");
+                                println!("\tvalidator {} should propose block", validator_index);
                             }
                         }
                         _ => (),
@@ -138,10 +135,8 @@ impl<C: EthConfig> Service<C> {
     }
 
     fn get_validator_index(&self, pubkey: &String) -> Option<ValidatorIndex> {
-        println!("{}", pubkey);
         for validator in &self.validators {
             if validator.public_key_str == *pubkey {
-                println!("{}\n", validator.index.clone());
                 return Some(validator.index.clone());
             }
         }
@@ -174,11 +169,6 @@ fn parse_validators(keys: Vec<KeysPair>) -> Result<Vec<Validator>, String> {
             bytes.extend_from_slice(&private_key_bytes[..]);
             let private_key = SecretKey::from_bytes(&bytes)
                 .map_err(|e| format!("Failed to decode bytes into secret key: {:?}", e))?;
-
-            for i in 0..bytes.len() {
-                print!("{} ", bytes[i]);
-            }
-            println!("\n\n");
             result.push(Validator {
                 private_key,
                 public_key,

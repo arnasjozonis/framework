@@ -49,7 +49,6 @@ impl RestClient {
         let host = self.base_url.clone();
         println!("posting: {}", host.clone() + resource_uri);
         let uri: Uri = (host + resource_uri).parse().unwrap();
-        println!("Calling POST: {}", uri);
         match self.post_request(uri, body) {
             Some(response) => response,
             None => Some(TResult::default()),
@@ -120,7 +119,6 @@ impl RestClient {
     {
         let host = self.base_url.clone();
         let uri: Uri = (host + resource_uri).parse().unwrap();
-        println!("URI: {}", uri);
         self.get_request(uri)
     }
 

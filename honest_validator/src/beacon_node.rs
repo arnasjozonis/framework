@@ -80,10 +80,8 @@ pub struct BasicBeaconNode {
 
 impl BasicBeaconNode {
     pub fn new() -> BasicBeaconNode {
-        println!("creating rest client.");
         let beacon_node_rest_client =
             Rc::new(RestClient::new(String::from("http://localhost:5052")).unwrap());
-        println!("rest client created.");
         let state: Option<BeaconStateResponse> = beacon_node_rest_client.get(&"/beacon/state");
         let last_known_state = match state {
             Some(state_response) => state_response.beacon_state,
@@ -180,7 +178,6 @@ impl BeaconNode for BasicBeaconNode {
         } else {
             state.fork.current_version.clone().to_vec()
         };
-        println!("{}", version.len());
         bytes.append(&mut version);
         let mut fork_and_domain = [0; 8];
         fork_and_domain.copy_from_slice(&bytes);
